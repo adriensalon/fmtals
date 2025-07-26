@@ -30,7 +30,11 @@ int main(int argc, char* argv[])
     std::filesystem::path _input_path(argv[1]);
     if (!std::filesystem::exists(_input_path)) {
         std::cerr << "Error: File does not exist\n";
-        return 1;
+        return 2;
+    }
+    if (_input_path.extension() != ".als" && _input_path.extension() != ".alp") {
+        std::cerr << "Error: File is not an Ableton Live set or preset\n";
+        return 3;
     }
     std::ifstream _input_stream(_input_path, std::ios::binary);
     cereal::rapidxml::xml_document<char> _xml_doc;
@@ -38,13 +42,14 @@ int main(int argc, char* argv[])
     gz_decompress(_input_stream, _xml_data);
     std::filesystem::path _output_path = _input_path;
     _output_path.replace_extension(".xml");
-    std::ofstream _out_file(_output_path);
-    if (!_out_file) {
+    std::ofstream _output_stream(_output_path);
+    if (!_output_stream) {
         std::cerr << "Error: Could not write to file: " << _output_path << '\n';
-        return 1;
+        return 4;
     }
-    _out_file << remove_double_newlines(_xml_data);
-    _out_file.close();
+    // _output_stream << remove_double_newlines(_xml_data);
+    _output_stream << (_xml_data);
+    _output_stream.close();
     std::cout << "XML written to: " << _output_path << '\n';
     return 0;
 }

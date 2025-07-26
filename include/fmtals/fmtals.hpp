@@ -35,6 +35,7 @@ struct project {
         std::string effective_name;
         std::string user_name;
         std::string annotation;
+        std::optional<std::string> memorized_first_clip_name; // Not in 9.7.7
     };
 
     struct vec2 {
@@ -90,6 +91,21 @@ struct project {
         std::optional<std::uint32_t> color_index;
         std::int32_t track_group_id;
         bool track_unfolded;
+        
+        // devices list weapper
+        // clip slots list weapper
+        // view data
+
+        std::int32_t saved_playing_slot;
+        std::int32_t saved_playing_offset;
+        bool midi_fold_in;
+        bool midi_prelisten;
+        bool freeze;
+        std::uint32_t velocity_detail;
+        bool need_arranger_refreeze;
+        std::uint32_t post_process_freeze_clips;
+        bool midi_target_prefers_fold_or_is_not_uniform;
+        device_chain track_device_chain;
 
     };
 
@@ -99,6 +115,23 @@ struct project {
         name track_name;
         std::optional<std::uint32_t> color;
         std::optional<std::uint32_t> color_index;
+        std::int32_t track_group_id;
+        bool track_unfolded;
+        
+        // devices list weapper
+        // clip slots list weapper
+        // view data
+
+        std::int32_t saved_playing_slot;
+        std::int32_t saved_playing_offset;
+        bool midi_fold_in;
+        bool midi_prelisten;
+        bool freeze;
+        std::uint32_t velocity_detail;
+        bool need_arranger_refreeze;
+        std::uint32_t post_process_freeze_clips;
+        bool midi_target_prefers_fold_or_is_not_uniform;
+        device_chain track_device_chain;
 
     };
 
@@ -108,6 +141,23 @@ struct project {
         name track_name;
         std::optional<std::uint32_t> color;
         std::optional<std::uint32_t> color_index;
+        std::int32_t track_group_id;
+        bool track_unfolded;
+        
+        // devices list weapper
+        // clip slots list weapper
+        // view data
+
+        std::int32_t saved_playing_slot;
+        std::int32_t saved_playing_offset;
+        bool midi_fold_in;
+        bool midi_prelisten;
+        bool freeze;
+        std::uint32_t velocity_detail;
+        bool need_arranger_refreeze;
+        std::uint32_t post_process_freeze_clips;
+        bool midi_target_prefers_fold_or_is_not_uniform;
+        device_chain track_device_chain;
 
     };
 
@@ -118,7 +168,7 @@ struct project {
 
     };
 
-    struct prehear_track {
+    struct pre_hear_track {
 
     };
 
@@ -194,12 +244,13 @@ struct project {
     std::vector<user_track> tracks;                                     // Always present
     std::vector<return_track> return_tracks;                            // Always present
     master_track project_master_track;                                  // Always present, named 'main' track for version >= 12.0.0
-    prehear_track project_prehear_track;                                // Always present
+    pre_hear_track project_prehear_track;                                // Always present
+    std::vector<bool> sends_pre;
     std::vector<scene> scene_names;                                     // Always present
     transport project_transport;
     song_master_values master_values;
     std::uint32_t global_quantisation;                                  // Always present
-    std::optional<std::uint32_t> auto_quantisation;                     // Version >= 12.0.0
+    std::uint32_t auto_quantisation;                                    // Always present
     grid project_grid;                                                  // Always present
     scale_information project_scale_information;                        // Always present
     std::optional<bool> in_key;                                         // Version >= 12.0.0
