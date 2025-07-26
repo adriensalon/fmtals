@@ -65,7 +65,7 @@ void gz_decompress(std::istream& gz_stream, std::string& data)
         throw std::runtime_error("Failed to initialize zlib (gzip mode)");
     }
     data.clear();
-    char _buffer[40960];
+    char _buffer[4096];
     int _ret;
     do {
         _zstream.next_out = reinterpret_cast<Bytef*>(_buffer);
@@ -165,42 +165,35 @@ xml_node* xml_create_node(xml_document& document, xml_node* parent, const std::s
     return _child;
 }
 
-#define VARIANT2_ACCESSOR_IMPL(struct_name, accessor_type, accessor_name) \
-    accessor_type& struct_name::accessor_name()                           \
-    {                                                                     \
-        if (index() == 0) {                                               \
-            return std::get<0>(*this).accessor_name;                      \
-        } else if (index() == 1) {                                        \
-            return std::get<1>(*this).accessor_name;                      \
-        } else {                                                          \
-            throw std::runtime_error("Unexpected track variant");         \
-        }                                                                 \
-    }                                                                     \
-    const accessor_type& struct_name::accessor_name() const               \
-    {                                                                     \
-        if (index() == 0) {                                               \
-            return std::get<0>(*this).accessor_name;                      \
-        } else if (index() == 1) {                                        \
-            return std::get<1>(*this).accessor_name;                      \
-        } else {                                                          \
-            throw std::runtime_error("Unexpected track variant");         \
-        }                                                                 \
-    }
-
-namespace dfmt {
-namespace ableton {
-
-    VARIANT2_ACCESSOR_IMPL(project::user_track, bool, envelope_mode_preferred)
-    VARIANT2_ACCESSOR_IMPL(project::user_track, project::track_delay, delay)
-    VARIANT2_ACCESSOR_IMPL(project::user_track, project::name, track_name)
-    VARIANT2_ACCESSOR_IMPL(project::user_track, std::optional<std::uint32_t>, color_index)
-    VARIANT2_ACCESSOR_IMPL(project::user_track, std::optional<std::uint32_t>, color)
-    VARIANT2_ACCESSOR_IMPL(project::user_track, std::int32_t, track_group_id)
-    VARIANT2_ACCESSOR_IMPL(project::user_track, bool, track_unfolded)
-
+bool xml_stob(const std::string& s)
+{
+    if (s == "true")
+        return true;
+    if (s == "false")
+        return false;
+    throw std::invalid_argument("Expected 'true' or 'false', got: " + s);
 }
 
-void import_project(std::istream& stream, ableton::project& proj, ableton::version& ver)
+template <typename T>
+T xml_get_value(const xml_node* node)
+{
+    xml_attribute* _attribute = xml_get_attribute(node, "Value");
+    std::string _str_value = _attribute->value();
+    if constexpr (std::is_same_v<T, bool>) {
+        return xml_stob(_str_value);
+    } else if constexpr (std::is_same_v<T, std::string>) {
+        return _str_value;
+    } else if constexpr (std::is_same_v<T, float>) {
+        return std::stof(_str_value);
+    } else if constexpr (std::is_convertible_v<T, int>) {
+        return std::stoi(_str_value);
+    }
+    return T {};
+}
+
+namespace fmtals {
+
+void import_project(std::istream& stream, project& proj, version& ver)
 {
     // decompress
     xml_document _xml_doc;
@@ -215,9 +208,9 @@ void import_project(std::istream& stream, ableton::project& proj, ableton::versi
     proj.project_version_info.minor_version = xml_get_attribute(_ableton_node, "MinorVersion")->value();
 
     // HERE PROCESS VERSION FROM STRINGS
-    ver = ableton::version::v_9_7_7;
+    ver = version::v_9_7_7;
 
-    if (ver >= ableton::version::v_11_0_0) {
+    if (ver >= version::v_11_0_0) {
         proj.project_version_info.minor_version = xml_get_attribute(_ableton_node, "SchemaChangeCount")->value();
     }
     proj.project_version_info.creator = xml_get_attribute(_ableton_node, "Creator")->value();
@@ -227,11 +220,65 @@ void import_project(std::istream& stream, ableton::project& proj, ableton::versi
         xml_node* _liveset_node = xml_get_node(_ableton_node, { "LiveSet" });
         {
             // ids
+            proj.overwrite_protection_number = xml_get_value<std::uint32_t>(xml_get_node(_liveset_node, { "OverwriteProtectionNumber" }));
+            // lom id
+            // lom id view
+
+            // tracks
+            std::vector<xml_node*> _track_nodes = xml_get_nodes(_liveset_node, { "Tracks" });
+            for (xml_node* _track_node : _track_nodes) {
+
+                // lom id
+                // lom id view
+
+                project::user_track _user_track;
+                std::string _track_type(_track_node->name());
+                if (_track_type == "AudioTrack") {
+                    _user_track = project::audio_track();
+                } else if (_track_type == "MidiTrack") {
+                    _user_track = project::midi_track();
+                } else if (_track_type == "GroupTrack") {
+                    _user_track = project::group_track();
+                } else if (_track_type == "ReturnTrack") {
+                    _user_track = project::return_track();
+                } else {
+                    throw std::runtime_error("Invalid track type");
+                }
+
+                std::visit([&](auto& _track_visit) {
+                    _track_visit.envelope_mode_preferred = xml_get_value<bool>(xml_get_node(_track_node, { "EnvelopeModePreferred" }));
+                    xml_node* _delay_node = xml_get_node(_track_node, { "TrackDelay" });
+                    {
+                        _track_visit.delay.value = xml_get_value<float>(xml_get_node(_delay_node, { "Value" }));
+                        _track_visit.delay.is_value_sample_based = xml_get_value<bool>(xml_get_node(_delay_node, { "IsValueSampleBased" }));
+                    }
+                    xml_node* _name_node = xml_get_node(_track_node, { "Name" });
+                    {
+                        _track_visit.track_name.effective_name = xml_get_value<std::string>(xml_get_node(_name_node, { "EffectiveName" }));
+                        _track_visit.track_name.user_name = xml_get_value<std::string>(xml_get_node(_name_node, { "UserName" }));
+                        _track_visit.track_name.annotation = xml_get_value<std::string>(xml_get_node(_name_node, { "Annotation" }));
+                    }
+                    if (ver >= version::v_12_0_0) {
+                        _track_visit.color = xml_get_value<std::int32_t>(xml_get_node(_track_node, { "Color" }));
+                    } else {
+                        _track_visit.color_index = xml_get_value<std::int32_t>(xml_get_node(_track_node, { "ColorIndex" }));
+                    }
+
+                    using _track_type_t = std::decay_t<decltype(_track_visit)>;
+                    if constexpr (std::is_same_v<_track_type_t, project::audio_track>) {
+                        // audio track code
+                    }
+
+
+                }, _user_track);
+
+                proj.tracks.emplace_back(_user_track);
+            }
         }
     }
 }
 
-void export_project(std::ostream& stream, const ableton::project& proj, const ableton::version& ver)
+void export_project(std::ostream& stream, const project& proj, const version& ver)
 {
     // xml declaration
     xml_document _xml_doc;
@@ -244,7 +291,7 @@ void export_project(std::ostream& stream, const ableton::project& proj, const ab
     xml_node* _ableton_node = _xml_doc.allocate_node(cereal::rapidxml::node_element, "Ableton");
     _ableton_node->append_attribute(_xml_doc.allocate_attribute("MajorVersion", proj.project_version_info.major_version.c_str()));
     _ableton_node->append_attribute(_xml_doc.allocate_attribute("MinorVersion", proj.project_version_info.minor_version.c_str()));
-    if (ver >= ableton::version::v_11_0_0) {
+    if (ver >= version::v_11_0_0) {
         // _ableton_node->append_attribute(_xml_doc.allocate_attribute("SchemaChangeCount", "7"));
     }
     _ableton_node->append_attribute(_xml_doc.allocate_attribute("Creator", proj.project_version_info.creator.c_str()));
@@ -255,7 +302,7 @@ void export_project(std::ostream& stream, const ableton::project& proj, const ab
         xml_node* _liveset_node = xml_create_node(_xml_doc, _ableton_node, "LiveSet");
         {
             // ids etc
-            if (ver >= ableton::version::v_11_0_0) {
+            if (ver >= version::v_11_0_0) {
                 // xml_create_node(_xml_doc, _liveset_node, "NextPointeeId", { { "Value", "36073" } });
             }
             xml_create_node(_xml_doc, _liveset_node, "OverwriteProtectionNumber", { { "Value", "3072" } });
@@ -264,9 +311,9 @@ void export_project(std::ostream& stream, const ableton::project& proj, const ab
 
             // tracks
             xml_node* _tracks_node = xml_create_node(_xml_doc, _liveset_node, "Tracks");
-            for (const ableton::project::user_track& _track : proj.tracks) {
+            for (const project::user_track& _track : proj.tracks) {
 
-                // auto& _audio_track = std::get<ableton::project::audio_track>(_track);
+                // auto& _audio_track = std::get<project::audio_track>(_track);
 
                 // ids etc
                 xml_node* _track_node = xml_create_node(_xml_doc, _tracks_node, "AudioTrack", { { "Id", "46" } });
@@ -277,25 +324,29 @@ void export_project(std::ostream& stream, const ableton::project& proj, const ab
 
                 // track delay
                 xml_node* _track_delay_node = xml_create_node(_xml_doc, _track_node, "TrackDelay");
-                xml_create_node(_xml_doc, _track_delay_node, "Value", { { "Value", std::to_string(_track.delay().value).c_str() } });
-                xml_create_node(_xml_doc, _track_delay_node, "IsValueSampleBased", { { "Value", std::to_string(_track.delay().is_value_sample_based).c_str() } });
+                // std::visit([](const auto& _t) {
+                //     xml_create_node(_xml_doc, _track_delay_node, "Value", { { "Value", std::to_string(_t.delay.value).c_str() } });
+                // }, _track);
+
+                // xml_create_node(_xml_doc, _track_delay_node, "Value", { { "Value", std::to_string(_track.delay().value).c_str() } });
+                // xml_create_node(_xml_doc, _track_delay_node, "IsValueSampleBased", { { "Value", std::to_string(_track.delay().is_value_sample_based).c_str() } });
 
                 // name
                 xml_node* _track_name_node = xml_create_node(_xml_doc, _track_node, "Name");
                 {
-                    xml_create_node(_xml_doc, _track_name_node, "EffectiveName", { { "Value", _track.track_name().effective_name.c_str() } });
-                    xml_create_node(_xml_doc, _track_name_node, "UserName", { { "Value", _track.track_name().user_name.c_str() } });
-                    xml_create_node(_xml_doc, _track_name_node, "Annotation", { { "Value", _track.track_name().annotation.c_str() } });
-                    if (ver >= ableton::version::v_12_0_0) {
+                    // xml_create_node(_xml_doc, _track_name_node, "EffectiveName", { { "Value", _track.track_name().effective_name.c_str() } });
+                    // xml_create_node(_xml_doc, _track_name_node, "UserName", { { "Value", _track.track_name().user_name.c_str() } });
+                    // xml_create_node(_xml_doc, _track_name_node, "Annotation", { { "Value", _track.track_name().annotation.c_str() } });
+                    if (ver >= version::v_12_0_0) {
                         // xml_create_node(_xml_doc, _track_name_node, "MemorizedFirstClipName", { { "Value", "" } });
                     }
                 }
 
                 // color
-                if (ver >= ableton::version::v_12_0_0) {
-                    xml_create_node(_xml_doc, _track_node, "Color", { { "Value", std::to_string(_track.color().value()).c_str() } });
+                if (ver >= version::v_12_0_0) {
+                    // xml_create_node(_xml_doc, _track_node, "Color", { { "Value", std::to_string(_track.color().value()).c_str() } });
                 } else {
-                    xml_create_node(_xml_doc, _track_node, "ColorIndex", { { "Value", std::to_string(_track.color_index().value()).c_str() } });
+                    // xml_create_node(_xml_doc, _track_node, "ColorIndex", { { "Value", std::to_string(_track.color_index().value()).c_str() } });
                 }
                 xml_create_node(_xml_doc, xml_create_node(_xml_doc, _track_node, "AutomationEnvelopes"), "Envelopes");
                 xml_create_node(_xml_doc, _track_node, "TrackGroupId", { { "Value", "-1" } }); // -1 vers master

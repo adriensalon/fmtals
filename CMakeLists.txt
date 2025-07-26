@@ -13,4 +13,6 @@ target_include_directories(libfmtals PUBLIC include)
 target_include_directories(libfmtals PRIVATE external/zlib)
 target_link_libraries(libfmtals PRIVATE cereal zlib)
 
-add_subdirectory(dev)
+add_subdirectory(tool/als2xml)
+add_subdirectory(tool/xml2als)
+add_subdirectory(test)
