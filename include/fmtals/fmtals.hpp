@@ -57,6 +57,7 @@ struct project {
     };
 
     struct audio_track {
+        std::uint32_t id;
         bool envelope_mode_preferred;
         track_delay delay;
         name track_name;
@@ -84,6 +85,7 @@ struct project {
     };
 
     struct midi_track {
+        std::uint32_t id;
         bool envelope_mode_preferred;
         track_delay delay;
         name track_name;
@@ -110,6 +112,7 @@ struct project {
     };
 
     struct group_track {
+        std::uint32_t id;
         bool envelope_mode_preferred;
         track_delay delay;
         name track_name;
@@ -136,6 +139,7 @@ struct project {
     };
 
     struct return_track {
+        std::uint32_t id;
         bool envelope_mode_preferred;
         track_delay delay;
         name track_name;
@@ -278,7 +282,7 @@ struct project {
     std::string annotation;
     bool solo_or_pfl_saved_value;
     bool solo_in_place;
-    std::uint32_t cross_fade_curve;
+    std::uint32_t crossfade_curve;
     std::uint32_t latency_compensation;
     std::uint32_t highlighted_track_index;
     std::vector<groove> groove_pool;
