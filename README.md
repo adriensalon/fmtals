@@ -1,4 +1,4 @@
-# libfmtals
+# fmtals
 
 Reversal of the Ableton Live .als (liveset) and .alp (preset) formats. Ableton Live files are represented as XML data, compressed as gzip. This project provides functionnality for importing and exporting livesets as C++17 data structures. If your Ableton Live version is not yet supported please report an issue. Documentation for the `ableton::project` data structure can be found directly in the [fmtals/fmtals.hpp](include/fmtals/fmtals.hpp) header.
 
