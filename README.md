@@ -4,9 +4,9 @@ Reversal of the Ableton Live .als (liveset) and .alp (preset) formats. Ableton L
 
 ### Usage
 
-Use `void dfmt::import_project(std::istream&, ableton::project&, ableton::version&)` to import a project and retrieve the Ableton Live version it was created with.
+Use `void fmtals::import_project(std::istream&, fmtals::project&, fmtals::version&)` to import a project and retrieve the Ableton Live version it was created with.
 
-Use `void dfmt::export_project(std::ostream&, const ableton::project&, const ableton::version&)` to export a project for a specified Ableton Live version.
+Use `void fmtals::export_project(std::ostream&, const fmtals::project&, const fmtals::version&)` to export a project for a specified Ableton Live version.
 
 ### Supported versions
 - 9.7.7
