@@ -15,7 +15,7 @@
 
 void gz_decompress(std::istream& gz_stream, std::string& data)
 {
-    // if (auto* _fstream = dynamic_cast<std::ifstream*>(&gz_stream)) {
+    // if (std::ifstream* _fstream = dynamic_cast<std::ifstream*>(&gz_stream)) {
     //     if (!(_fstream->flags() & std::ios::binary)) {
     //         throw std::runtime_error("gz_decompress: ifstream must be opened in binary mode");
     //     }
@@ -217,6 +217,12 @@ T xml_get_node_and_value(const xml_node* node, const std::string& child_name)
     return xml_get_value<T>(xml_get_node(node, child_name));
 }
 
+template <typename T>
+void xml_get_node_and_value(const xml_node* node, const std::string& child_name, T& value)
+{
+    value = xml_get_value<T>(xml_get_node(node, child_name));
+}
+
 namespace fmtals {
 
 void import_project(std::istream& stream, project& proj, version& ver)
@@ -231,22 +237,22 @@ void import_project(std::istream& stream, project& proj, version& ver)
     xml_node* _ableton_node = _xml_doc.first_node("Ableton");
     {
         // header attributes
-        proj.project_version_info.major_version = xml_get_attribute(_ableton_node, "MajorVersion")->value();
-        proj.project_version_info.minor_version = xml_get_attribute(_ableton_node, "MinorVersion")->value();
-        proj.project_version_info.creator = xml_get_attribute(_ableton_node, "Creator")->value();
-        proj.project_version_info.revision = xml_get_attribute(_ableton_node, "Revision")->value();
+        proj.major_version = xml_get_attribute(_ableton_node, "MajorVersion")->value();
+        proj.minor_version = xml_get_attribute(_ableton_node, "MinorVersion")->value();
+        proj.creator = xml_get_attribute(_ableton_node, "Creator")->value();
+        proj.revision = xml_get_attribute(_ableton_node, "Revision")->value();
         ver = version::v_9_7_7; // HERE PROCESS VERSION FROM STRINGS
 
         // schema change count attribute in newer versions
         if (ver >= version::v_11_0_0) {
-            proj.project_version_info.minor_version = xml_get_attribute(_ableton_node, "SchemaChangeCount")->value();
+            proj.schema_change_count = xml_get_attribute(_ableton_node, "SchemaChangeCount")->value();
         }
 
         // liveset
         xml_node* _liveset_node = xml_get_node(_ableton_node, "LiveSet");
         {
             // ids
-            proj.overwrite_protection_number = xml_get_node_and_value<std::uint32_t>(_liveset_node, "OverwriteProtectionNumber");
+            xml_get_node_and_value(_liveset_node, "OverwriteProtectionNumber", proj.overwrite_protection_number);
             // lom id
             // lom id view
 
@@ -278,49 +284,41 @@ void import_project(std::istream& stream, project& proj, version& ver)
                     _track_visit.id = xml_get_value<std::uint32_t>(_track_node, "Id");
                     // lom id TODO
                     // lom id view TODO
-                    _track_visit.envelope_mode_preferred = xml_get_node_and_value<bool>(_track_node, "EnvelopeModePreferred");
+                    xml_get_node_and_value(_track_node, "EnvelopeModePreferred", _track_visit.envelope_mode_preferred);
 
-                    // delay
                     xml_node* _delay_node = xml_get_node(_track_node, "TrackDelay");
-                    {
-                        _track_visit.delay.value = xml_get_node_and_value<float>(_delay_node, "Value");
-                        _track_visit.delay.is_value_sample_based = xml_get_node_and_value<bool>(_delay_node, "IsValueSampleBased");
-                    }
+                    xml_get_node_and_value(_delay_node, "Value", _track_visit.track_delay_value);
+                    xml_get_node_and_value(_delay_node, "IsValueSampleBased", _track_visit.track_delay_is_value_sample_based);
 
-                    // name
                     xml_node* _name_node = xml_get_node(_track_node, "Name");
-                    {
-                        _track_visit.track_name.effective_name = xml_get_node_and_value<std::string>(_name_node, "EffectiveName");
-                        _track_visit.track_name.user_name = xml_get_node_and_value<std::string>(_name_node, "UserName");
-                        _track_visit.track_name.annotation = xml_get_node_and_value<std::string>(_name_node, "Annotation");
-                    }
+                    xml_get_node_and_value(_name_node, "EffectiveName", _track_visit.effective_name);
+                    xml_get_node_and_value(_name_node, "UserName", _track_visit.user_name);
+                    xml_get_node_and_value(_name_node, "Annotation", _track_visit.annotation);
 
-                    // color
                     if (ver >= version::v_12_0_0) {
-                        _track_visit.color = xml_get_node_and_value<std::int32_t>(_track_node, "Color");
+                        xml_get_node_and_value(_track_node, "Color", _track_visit.color.emplace());
                     } else {
-                        _track_visit.color_index = xml_get_node_and_value<std::int32_t>(_track_node, "ColorIndex");
+                        xml_get_node_and_value(_track_node, "ColorIndex", _track_visit.color_index.emplace());
                     }
 
                     // audio & midi specifics
                     if constexpr (std::is_same_v<_track_type_t, project::audio_track>) {
-                        _track_visit.track_group_id = xml_get_node_and_value<std::int32_t>(_track_node, "TrackGroupId");
-                        _track_visit.track_unfolded = xml_get_node_and_value<bool>(_track_node, "TrackUnfolded");
+                        xml_get_node_and_value(_track_node, "TrackGroupId", _track_visit.track_group_id);
+                        xml_get_node_and_value(_track_node, "TrackUnfolded", _track_visit.track_unfolded);
                         // devices list weapper TODO
                         // clip slots list weapper TODO
                         // view data TODO
-                        _track_visit.saved_playing_slot = xml_get_node_and_value<std::int32_t>(_track_node, "SavedPlayingSlot");
-                        _track_visit.saved_playing_slot = xml_get_node_and_value<std::int32_t>(_track_node, "SavedPlayingOffset");
-                        _track_visit.midi_fold_in = xml_get_node_and_value<bool>(_track_node, "MidiFoldIn");
-                        _track_visit.midi_prelisten = xml_get_node_and_value<bool>(_track_node, "MidiPrelisten");
-                        _track_visit.freeze = xml_get_node_and_value<bool>(_track_node, "Freeze");
-                        _track_visit.velocity_detail = xml_get_node_and_value<std::int32_t>(_track_node, "VelocityDetail");
-                        _track_visit.need_arranger_refreeze = xml_get_node_and_value<bool>(_track_node, "NeedArrangerRefreeze");
-                        _track_visit.post_process_freeze_clips = xml_get_node_and_value<std::uint32_t>(_track_node, "PostProcessFreezeClips");
-                        _track_visit.midi_target_prefers_fold_or_is_not_uniform = xml_get_node_and_value<bool>(_track_node, "MidiTargetPrefersFoldOrIsNotUniform");
+                        xml_get_node_and_value(_track_node, "SavedPlayingSlot", _track_visit.saved_playing_slot);
+                        xml_get_node_and_value(_track_node, "SavedPlayingOffset", _track_visit.saved_playing_slot);
+                        xml_get_node_and_value(_track_node, "MidiFoldIn", _track_visit.midi_fold_in);
+                        xml_get_node_and_value(_track_node, "MidiPrelisten", _track_visit.midi_prelisten);
+                        xml_get_node_and_value(_track_node, "Freeze", _track_visit.freeze);
+                        xml_get_node_and_value(_track_node, "VelocityDetail", _track_visit.velocity_detail);
+                        xml_get_node_and_value(_track_node, "NeedArrangerRefreeze", _track_visit.need_arranger_refreeze);
+                        xml_get_node_and_value(_track_node, "PostProcessFreezeClips", _track_visit.post_process_freeze_clips);
+                        xml_get_node_and_value(_track_node, "MidiTargetPrefersFoldOrIsNotUniform", _track_visit.midi_target_prefers_fold_or_is_not_uniform);
                     }
 
-                    // device chain
                     xml_node* _device_chain_node = xml_get_node(_track_node, "DeviceChain");
                     {
                         // TODO
@@ -331,7 +329,6 @@ void import_project(std::istream& stream, project& proj, version& ver)
                 proj.tracks.emplace_back(_user_track);
             }
 
-            // master/main track
             if (ver >= version::v_12_0_0) {
                 xml_node* _main_track = xml_get_node(_liveset_node, "MainTrack");
                 {
@@ -344,13 +341,11 @@ void import_project(std::istream& stream, project& proj, version& ver)
                 }
             }
 
-            // pre hear track
             xml_node* _pre_hear_track = xml_get_node(_liveset_node, "PreHearTrack");
             {
                 // TODO
             }
 
-            // sends pre
             std::vector<xml_node*> _sends_pre_nodes = xml_get_nodes(xml_get_node(_liveset_node, "SendsPre"));
             proj.sends_pre.reserve(_sends_pre_nodes.size());
             for (xml_node* _sends_pre_node : _sends_pre_nodes) {
@@ -359,80 +354,62 @@ void import_project(std::istream& stream, project& proj, version& ver)
 
             // scenes TODO???
 
-            // transport
             xml_node* _transport_node = xml_get_node(_liveset_node, "Transport");
-            {
-                proj.project_transport.phase_nudge_tempo = xml_get_node_and_value<std::uint32_t>(_transport_node, "PhaseNudgeTempo");
-                proj.project_transport.loop_on = xml_get_node_and_value<bool>(_transport_node, "LoopOn");
-                proj.project_transport.loop_start = xml_get_node_and_value<std::uint32_t>(_transport_node, "LoopStart");
-                proj.project_transport.loop_length = xml_get_node_and_value<std::uint32_t>(_transport_node, "LoopLength");
-                proj.project_transport.loop_is_song_start = xml_get_node_and_value<bool>(_transport_node, "LoopIsSongStart");
-                proj.project_transport.current_time = xml_get_node_and_value<std::uint32_t>(_transport_node, "CurrentTime");
-                proj.project_transport.punch_in = xml_get_node_and_value<bool>(_transport_node, "PunchIn");
-                proj.project_transport.punch_out = xml_get_node_and_value<bool>(_transport_node, "PunchOut");
-                // TODO metronome_tick_duration for 12
-                proj.project_transport.draw_mode = xml_get_node_and_value<bool>(_transport_node, "DrawMode");
-                if (ver < version::v_12_0_0) {
-                    proj.project_transport.computer_keyboard_is_enabled = xml_get_node_and_value<bool>(_transport_node, "ComputerKeyboardIsEnabled");
-                }
+            xml_get_node_and_value(_transport_node, "PhaseNudgeTempo", proj.transport_phase_nudge_tempo);
+            xml_get_node_and_value(_transport_node, "LoopOn", proj.transport_loop_on);
+            xml_get_node_and_value(_transport_node, "LoopStart", proj.transport_loop_start);
+            xml_get_node_and_value(_transport_node, "LoopLength", proj.transport_loop_length);
+            xml_get_node_and_value(_transport_node, "LoopIsSongStart", proj.transport_loop_is_song_start);
+            xml_get_node_and_value(_transport_node, "CurrentTime", proj.transport_current_time);
+            xml_get_node_and_value(_transport_node, "PunchIn", proj.transport_punch_in);
+            xml_get_node_and_value(_transport_node, "PunchOut", proj.transport_punch_out);
+            // TODO metronome_tick_duration for 12
+            xml_get_node_and_value(_transport_node, "DrawMode", proj.transport_draw_mode);
+            if (ver < version::v_12_0_0) {
+                xml_get_node_and_value(_transport_node, "ComputerKeyboardIsEnabled", proj.transport_computer_keyboard_is_enabled.emplace());
             }
 
             // song master values TODO
 
             // quantisation
-            proj.global_quantisation = xml_get_node_and_value<std::uint32_t>(_liveset_node, "GlobalQuantisation");
-            proj.auto_quantisation = xml_get_node_and_value<std::uint32_t>(_liveset_node, "AutoQuantisation");
+            xml_get_node_and_value(_liveset_node, "GlobalQuantisation", proj.global_quantisation);
+            xml_get_node_and_value(_liveset_node, "AutoQuantisation", proj.auto_quantisation);
 
-            // grid
             xml_node* _grid_node = xml_get_node(_liveset_node, "Grid");
-            {
-                proj.project_grid.fixed_numerator = xml_get_node_and_value<std::uint32_t>(_grid_node, "FixedNumerator");
-                proj.project_grid.fixed_denominator = xml_get_node_and_value<std::uint32_t>(_grid_node, "FixedDenominator");
-                proj.project_grid.grid_interval_pixel = xml_get_node_and_value<std::uint32_t>(_grid_node, "GridIntervalPixel");
-                proj.project_grid.ntoles = xml_get_node_and_value<std::uint32_t>(_grid_node, "Ntoles");
-                proj.project_grid.snap_to_grid = xml_get_node_and_value<bool>(_grid_node, "SnapToGrid");
-                proj.project_grid.fixed = xml_get_node_and_value<bool>(_grid_node, "Fixed");
-            }
+            xml_get_node_and_value(_grid_node, "FixedNumerator", proj.grid_fixed_numerator);
+            xml_get_node_and_value(_grid_node, "FixedDenominator", proj.grid_fixed_denominator);
+            xml_get_node_and_value(_grid_node, "GridIntervalPixel", proj.grid_grid_interval_pixel);
+            xml_get_node_and_value(_grid_node, "Ntoles", proj.grid_ntoles);
+            xml_get_node_and_value(_grid_node, "SnapToGrid", proj.grid_snap_to_grid);
+            xml_get_node_and_value(_grid_node, "Fixed", proj.grid_fixed);
 
-            // scale information
             xml_node* _scale_info_node = xml_get_node(_liveset_node, "ScaleInformation");
-            {
-                proj.project_scale_information.root_note = xml_get_node_and_value<std::uint32_t>(_scale_info_node, "RootNote");
-                proj.project_scale_information.name = xml_get_node_and_value<std::string>(_scale_info_node, "Name");
-            }
+            xml_get_node_and_value(_scale_info_node, "RootNote", proj.scale_information_root_note);
+            xml_get_node_and_value(_scale_info_node, "Name", proj.scale_information_name);
 
-            // smpte format
-            proj.smpte_format = xml_get_node_and_value<std::uint32_t>(_liveset_node, "SmpteFormat");
+            xml_get_node_and_value(_liveset_node, "SmpteFormat", proj.smpte_format);
 
-            // time selection
             xml_node* _time_selection_node = xml_get_node(_liveset_node, "TimeSelection");
-            {
-                proj.project_time_selection.anchor_time = xml_get_node_and_value<float>(_time_selection_node, "AnchorTime");
-                proj.project_time_selection.other_time = xml_get_node_and_value<float>(_time_selection_node, "OtherTime");
-            }
+            xml_get_node_and_value(_time_selection_node, "AnchorTime", proj.time_selection_anchor_time);
+            xml_get_node_and_value(_time_selection_node, "OtherTime", proj.time_selection_other_time);
 
             // sequencer navigator TODO
 
-            // view states
             if (ver < version::v_12_0_0) {
-                proj.view_state_launch_panel = xml_get_node_and_value<bool>(_liveset_node, "ViewStateLaunchPanel");
-                proj.view_state_envelope_panel = xml_get_node_and_value<bool>(_liveset_node, "ViewStateEnvelopePanel");
-                proj.view_state_sample_panel = xml_get_node_and_value<bool>(_liveset_node, "ViewStateSamplePanel");
+                xml_get_node_and_value(_liveset_node, "ViewStateLaunchPanel", proj.view_state_launch_panel.emplace());
+                xml_get_node_and_value(_liveset_node, "ViewStateEnvelopePanel", proj.view_state_envelope_panel.emplace());
+                xml_get_node_and_value(_liveset_node, "ViewStateSamplePanel", proj.view_state_sample_panel.emplace());
             }
 
-            // content splitter properties
             if (ver < version::v_12_0_0) {
                 xml_node* _content_splitter_node = xml_get_node(_liveset_node, "ContentSplitterProperties");
-                {
-                    proj.content_splitter.emplace();
-                    proj.content_splitter.value().open = xml_get_node_and_value<bool>(_content_splitter_node, "Open");
-                    proj.content_splitter.value().size = xml_get_node_and_value<std::uint32_t>(_content_splitter_node, "Size");
-                }
+                xml_get_node_and_value(_content_splitter_node, "Open", proj.content_splitter_properties_open.emplace());
+                xml_get_node_and_value(_content_splitter_node, "Size", proj.content_splitter_properties_size.emplace());
             }
 
             // view states
-            proj.view_state_fx_slot_count = xml_get_node_and_value<std::uint32_t>(_liveset_node, "ViewStateFxSlotCount");
-            proj.view_state_session_mixer_height = xml_get_node_and_value<std::uint32_t>(_liveset_node, "ViewStateSessionMixerHeight");
+            xml_get_node_and_value(_liveset_node, "ViewStateFxSlotCount", proj.view_state_fx_slot_count);
+            xml_get_node_and_value(_liveset_node, "ViewStateSessionMixerHeight", proj.view_state_session_mixer_height);
 
             // locators TODO
 
@@ -448,32 +425,16 @@ void import_project(std::istream& stream, project& proj, version& ver)
 
             // cue points list wrapper TODO
 
-            // chooser bar
-            proj.chooser_bar = xml_get_node_and_value<std::uint32_t>(_liveset_node, "ChooserBar");
-
-            // annotation
-            proj.annotation = xml_get_node_and_value<std::string>(_liveset_node, "Annotation");
-
-            // solo
-            proj.solo_or_pfl_saved_value = xml_get_node_and_value<bool>(_liveset_node, "SoloOrPflSavedValue");
-            proj.solo_in_place = xml_get_node_and_value<bool>(_liveset_node, "SoloInPlace");
-
-            // crossfade curve
-            proj.crossfade_curve = xml_get_node_and_value<std::uint32_t>(_liveset_node, "CrossfadeCurve");
-
-            // latency compensation
-            proj.latency_compensation = xml_get_node_and_value<std::uint32_t>(_liveset_node, "LatencyCompensation");
-
-            // highlighted track index
-            proj.highlighted_track_index = xml_get_node_and_value<std::uint32_t>(_liveset_node, "HighlightedTrackIndex");
-
-            // grooves TODO
-
-            // arrangement overdub
-            proj.arrangement_overdub = xml_get_node_and_value<bool>(_liveset_node, "ArrangementOverdub");
+            xml_get_node_and_value(_liveset_node, "ChooserBar", proj.chooser_bar);
+            xml_get_node_and_value(_liveset_node, "Annotation", proj.annotation);
+            xml_get_node_and_value(_liveset_node, "SoloOrPflSavedValue", proj.solo_or_pfl_saved_value);
+            xml_get_node_and_value(_liveset_node, "SoloInPlace", proj.solo_in_place);
+            xml_get_node_and_value(_liveset_node, "CrossfadeCurve", proj.crossfade_curve);
+            xml_get_node_and_value(_liveset_node, "LatencyCompensation", proj.latency_compensation);
+            xml_get_node_and_value(_liveset_node, "HighlightedTrackIndex", proj.highlighted_track_index);
+            xml_get_node_and_value(_liveset_node, "ArrangementOverdub", proj.arrangement_overdub);
 
             // color sequence index TODO
-
         }
     }
 }
@@ -489,13 +450,13 @@ void export_project(std::ostream& stream, const project& proj, const version& ve
 
     // ableton header
     xml_node* _ableton_node = _xml_doc.allocate_node(cereal::rapidxml::node_element, "Ableton");
-    _ableton_node->append_attribute(_xml_doc.allocate_attribute("MajorVersion", proj.project_version_info.major_version.c_str()));
-    _ableton_node->append_attribute(_xml_doc.allocate_attribute("MinorVersion", proj.project_version_info.minor_version.c_str()));
+    _ableton_node->append_attribute(_xml_doc.allocate_attribute("MajorVersion", proj.major_version.c_str()));
+    _ableton_node->append_attribute(_xml_doc.allocate_attribute("MinorVersion", proj.minor_version.c_str()));
     if (ver >= version::v_11_0_0) {
         // _ableton_node->append_attribute(_xml_doc.allocate_attribute("SchemaChangeCount", "7"));
     }
-    _ableton_node->append_attribute(_xml_doc.allocate_attribute("Creator", proj.project_version_info.creator.c_str()));
-    _ableton_node->append_attribute(_xml_doc.allocate_attribute("Revision", proj.project_version_info.revision.c_str()));
+    _ableton_node->append_attribute(_xml_doc.allocate_attribute("Creator", proj.creator.c_str()));
+    _ableton_node->append_attribute(_xml_doc.allocate_attribute("Revision", proj.revision.c_str()));
     _xml_doc.append_node(_ableton_node);
     {
         // liveset
@@ -533,18 +494,18 @@ void export_project(std::ostream& stream, const project& proj, const version& ve
                     // track delay
                     xml_node* _track_delay_node = xml_create_node(_xml_doc, _track_node, "TrackDelay");
                     {
-                        xml_create_node_and_value(_xml_doc, _track_delay_node, "Value", _track_visit.delay.value);
-                        xml_create_node_and_value(_xml_doc, _track_delay_node, "IsValueSampleBased", _track_visit.delay.is_value_sample_based);
+                        xml_create_node_and_value(_xml_doc, _track_delay_node, "Value", _track_visit.track_delay_value);
+                        xml_create_node_and_value(_xml_doc, _track_delay_node, "IsValueSampleBased", _track_visit.track_delay_is_value_sample_based);
                     }
 
                     // name
                     xml_node* _track_name_node = xml_create_node(_xml_doc, _track_node, "Name");
                     {
-                        xml_create_node_and_value(_xml_doc, _track_name_node, "EffectiveName", _track_visit.track_name.effective_name);
-                        xml_create_node_and_value(_xml_doc, _track_name_node, "UserName", _track_visit.track_name.user_name);
-                        xml_create_node_and_value(_xml_doc, _track_name_node, "Annotation", _track_visit.track_name.annotation);
+                        xml_create_node_and_value(_xml_doc, _track_name_node, "EffectiveName", _track_visit.effective_name);
+                        xml_create_node_and_value(_xml_doc, _track_name_node, "UserName", _track_visit.user_name);
+                        xml_create_node_and_value(_xml_doc, _track_name_node, "Annotation", _track_visit.annotation);
                         if (ver >= version::v_12_0_0) {
-                            xml_create_node_and_value(_xml_doc, _track_name_node, "MemorizedFirstClipName", _track_visit.track_name.memorized_first_clip_name.value());
+                            xml_create_node_and_value(_xml_doc, _track_name_node, "MemorizedFirstClipName", _track_visit.memorized_first_clip_name.value());
                         }
                     }
 
@@ -693,17 +654,17 @@ void export_project(std::ostream& stream, const project& proj, const version& ve
             // transport
             xml_node* _transport_node = xml_create_node(_xml_doc, _liveset_node, "Transport");
             {
-                xml_create_node_and_value(_xml_doc, _transport_node, "PhaseNudgeTempo", proj.project_transport.phase_nudge_tempo);
-                xml_create_node_and_value(_xml_doc, _transport_node, "LoopOn", proj.project_transport.loop_on);
-                xml_create_node_and_value(_xml_doc, _transport_node, "LoopStart", proj.project_transport.loop_start);
-                xml_create_node_and_value(_xml_doc, _transport_node, "LoopLength", proj.project_transport.loop_length);
-                xml_create_node_and_value(_xml_doc, _transport_node, "LoopIsSongStart", proj.project_transport.loop_is_song_start);
-                xml_create_node_and_value(_xml_doc, _transport_node, "CurrentTime", proj.project_transport.current_time);
-                xml_create_node_and_value(_xml_doc, _transport_node, "PunchIn", proj.project_transport.punch_in);
-                xml_create_node_and_value(_xml_doc, _transport_node, "PunchOut", proj.project_transport.punch_out);
-                xml_create_node_and_value(_xml_doc, _transport_node, "DrawMode", proj.project_transport.draw_mode);
+                xml_create_node_and_value(_xml_doc, _transport_node, "PhaseNudgeTempo", proj.transport_phase_nudge_tempo);
+                xml_create_node_and_value(_xml_doc, _transport_node, "LoopOn", proj.transport_loop_on);
+                xml_create_node_and_value(_xml_doc, _transport_node, "LoopStart", proj.transport_loop_start);
+                xml_create_node_and_value(_xml_doc, _transport_node, "LoopLength", proj.transport_loop_length);
+                xml_create_node_and_value(_xml_doc, _transport_node, "LoopIsSongStart", proj.transport_loop_is_song_start);
+                xml_create_node_and_value(_xml_doc, _transport_node, "CurrentTime", proj.transport_current_time);
+                xml_create_node_and_value(_xml_doc, _transport_node, "PunchIn", proj.transport_punch_in);
+                xml_create_node_and_value(_xml_doc, _transport_node, "PunchOut", proj.transport_punch_out);
+                xml_create_node_and_value(_xml_doc, _transport_node, "DrawMode", proj.transport_draw_mode);
                 if (ver < version::v_12_0_0) {
-                    xml_create_node_and_value(_xml_doc, _transport_node, "ComputerKeyboardIsEnabled", proj.project_transport.computer_keyboard_is_enabled.value());
+                    xml_create_node_and_value(_xml_doc, _transport_node, "ComputerKeyboardIsEnabled", proj.transport_computer_keyboard_is_enabled.value());
                 }
             }
 
@@ -716,30 +677,23 @@ void export_project(std::ostream& stream, const project& proj, const version& ve
             // grid
             xml_node* _grid_node = xml_create_node(_xml_doc, _liveset_node, "Grid");
             {
-                xml_create_node_and_value(_xml_doc, _grid_node, "FixedNumerator", proj.project_grid.fixed_numerator);
-                xml_create_node_and_value(_xml_doc, _grid_node, "FixedDenominator", proj.project_grid.fixed_denominator);
-                xml_create_node_and_value(_xml_doc, _grid_node, "GridIntervalPixel", proj.project_grid.grid_interval_pixel);
-                xml_create_node_and_value(_xml_doc, _grid_node, "Ntoles", proj.project_grid.ntoles);
-                xml_create_node_and_value(_xml_doc, _grid_node, "SnapToGrid", proj.project_grid.snap_to_grid);
-                xml_create_node_and_value(_xml_doc, _grid_node, "Fixed", proj.project_grid.fixed);
+                xml_create_node_and_value(_xml_doc, _grid_node, "FixedNumerator", proj.grid_fixed_numerator);
+                xml_create_node_and_value(_xml_doc, _grid_node, "FixedDenominator", proj.grid_fixed_denominator);
+                xml_create_node_and_value(_xml_doc, _grid_node, "GridIntervalPixel", proj.grid_grid_interval_pixel);
+                xml_create_node_and_value(_xml_doc, _grid_node, "Ntoles", proj.grid_ntoles);
+                xml_create_node_and_value(_xml_doc, _grid_node, "SnapToGrid", proj.grid_snap_to_grid);
+                xml_create_node_and_value(_xml_doc, _grid_node, "Fixed", proj.grid_fixed);
             }
 
-            // scale information
             xml_node* _scale_info_node = xml_create_node(_xml_doc, _liveset_node, "ScaleInformation");
-            {
-                xml_create_node_and_value(_xml_doc, _scale_info_node, "RootNote", proj.project_scale_information.root_note);
-                xml_create_node_and_value(_xml_doc, _scale_info_node, "Name", proj.project_scale_information.name);
-            }
+            xml_create_node_and_value(_xml_doc, _scale_info_node, "RootNote", proj.scale_information_root_note);
+            xml_create_node_and_value(_xml_doc, _scale_info_node, "Name", proj.scale_information_name);
 
-            // smpte format
             xml_create_node_and_value(_xml_doc, _liveset_node, "SmpteFormat", proj.smpte_format);
 
-            // time selection
             xml_node* _time_selection_node = xml_create_node(_xml_doc, _liveset_node, "TimeSelection");
-            {
-                xml_create_node_and_value(_xml_doc, _time_selection_node, "AnchorTime", proj.project_time_selection.anchor_time);
-                xml_create_node_and_value(_xml_doc, _time_selection_node, "OtherTime", proj.project_time_selection.other_time);
-            }
+            xml_create_node_and_value(_xml_doc, _time_selection_node, "AnchorTime", proj.time_selection_anchor_time);
+            xml_create_node_and_value(_xml_doc, _time_selection_node, "OtherTime", proj.time_selection_other_time);
 
             // sequencer navigator
             xml_node* _sequencer_nav_node = xml_create_node(_xml_doc, _liveset_node, "SequencerNavigator");
@@ -753,15 +707,15 @@ void export_project(std::ostream& stream, const project& proj, const version& ve
                 // scroller position
                 xml_node* _scroller_pos_node = xml_create_node(_xml_doc, _sequencer_nav_node, "ScrollerPos");
                 {
-                    xml_create_attribute(_xml_doc, _scroller_pos_node, "X", proj.project_sequencer_navigator.scroller_pos.x);
-                    xml_create_attribute(_xml_doc, _scroller_pos_node, "Y", proj.project_sequencer_navigator.scroller_pos.y);
+                    xml_create_attribute(_xml_doc, _scroller_pos_node, "X", proj.project_sequencer_navigator.scroller_pos_x);
+                    xml_create_attribute(_xml_doc, _scroller_pos_node, "Y", proj.project_sequencer_navigator.scroller_pos_y);
                 }
 
                 // client size
                 xml_node* _client_size_node = xml_create_node(_xml_doc, _sequencer_nav_node, "ClientSize");
                 {
-                    xml_create_attribute(_xml_doc, _client_size_node, "X", proj.project_sequencer_navigator.client_size.x);
-                    xml_create_attribute(_xml_doc, _client_size_node, "Y", proj.project_sequencer_navigator.client_size.y);
+                    xml_create_attribute(_xml_doc, _client_size_node, "X", proj.project_sequencer_navigator.client_size_x);
+                    xml_create_attribute(_xml_doc, _client_size_node, "Y", proj.project_sequencer_navigator.client_size_y);
                 }
             }
 
@@ -776,10 +730,44 @@ void export_project(std::ostream& stream, const project& proj, const version& ve
             if (ver < version::v_12_0_0) {
                 xml_node* _content_splitter_node = xml_create_node(_xml_doc, _liveset_node, "ContentSplitterProperties");
                 {
-                    xml_create_node_and_value(_xml_doc, _content_splitter_node, "Open", proj.content_splitter.value().open);
-                    xml_create_node_and_value(_xml_doc, _content_splitter_node, "Size", proj.content_splitter.value().size);
+                    xml_create_node_and_value(_xml_doc, _content_splitter_node, "Open", proj.content_splitter_properties_open.value());
+                    xml_create_node_and_value(_xml_doc, _content_splitter_node, "Size", proj.content_splitter_properties_size.value());
                 }
             }
+
+            // view states
+            xml_create_node_and_value(_xml_doc, _liveset_node, "ViewStateFxSlotCount", proj.view_state_fx_slot_count);
+            xml_create_node_and_value(_xml_doc, _liveset_node, "ViewStateSessionMixerHeight", proj.view_state_session_mixer_height);
+
+            // locators TODO??
+
+            // detail clip keys midi
+            // tracks list wrapper
+            // visible tracks list wrapper
+            // return tracks list wrapper
+            // scenes list wrapper
+            // cue points list wrapper
+
+            // chooser bar
+            xml_create_node_and_value(_xml_doc, _liveset_node, "ChooserBar", proj.chooser_bar);
+
+            // annotation
+            xml_create_node_and_value(_xml_doc, _liveset_node, "Annotation", proj.annotation);
+
+            // solo
+            xml_create_node_and_value(_xml_doc, _liveset_node, "SoloOrPflSavedValue", proj.solo_or_pfl_saved_value);
+            xml_create_node_and_value(_xml_doc, _liveset_node, "SoloInPlace", proj.solo_in_place);
+
+            // crossfade curve
+            xml_create_node_and_value(_xml_doc, _liveset_node, "CrossfadeCurve", proj.crossfade_curve);
+
+            // latency compensation
+            xml_create_node_and_value(_xml_doc, _liveset_node, "LatencyCompensation", proj.latency_compensation);
+
+            // highlighted track index
+            xml_create_node_and_value(_xml_doc, _liveset_node, "HighlightedTrackIndex", proj.highlighted_track_index);
+
+            // grooves TODO
         }
     }
 
