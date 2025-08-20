@@ -146,7 +146,7 @@ struct project {
 
         // main sequencer
 
-        std::vector<audio_clip> main_sequencer_sample_events;
+        std::vector<audio_clip> events_audio_clips;
 
         // freeze sequencer
 
@@ -156,6 +156,8 @@ struct project {
     };
 
     struct midi_track {
+        unsigned int lom_id;
+        unsigned int lom_id_view;
         unsigned int id;
         bool envelope_mode_preferred;
         float track_delay_value;
@@ -187,6 +189,8 @@ struct project {
     };
 
     struct group_track {
+        unsigned int lom_id;
+        unsigned int lom_id_view;
         unsigned int id;
         bool envelope_mode_preferred;
         float track_delay_value;
@@ -218,6 +222,8 @@ struct project {
     };
 
     struct return_track {
+        unsigned int lom_id;
+        unsigned int lom_id_view;
         unsigned int id;
         bool envelope_mode_preferred;
         float track_delay_value;
@@ -265,18 +271,6 @@ struct project {
         // clips slots list wrapper
     };
 
-    struct sequencer_navigator {
-        struct beat_time_helper {
-            float current_zoom; // clean TODO
-        };
-
-        beat_time_helper beat_time;
-        float scroller_pos_x;
-        float scroller_pos_y;
-        float client_size_x;
-        float client_size_y;
-    };
-
     // Represents a liveset locator
     struct locator {
 
@@ -302,8 +296,10 @@ struct project {
     std::string minor_version;
     std::string creator;
     std::string revision;
-    std::optional<std::string> schema_change_count;                     // Version >= 12.0.0
+    std::optional<std::string> schema_change_count;  
     int overwrite_protection_number;
+    unsigned int lom_id;
+    unsigned int lom_id_view;                   // Version >= 12.0.0
     std::vector<user_track> tracks;
     std::vector<return_track> return_tracks;
     master_track project_master_track;
@@ -337,7 +333,11 @@ struct project {
     unsigned int smpte_format;
     float time_selection_anchor_time;
     float time_selection_other_time;
-    sequencer_navigator project_sequencer_navigator;
+    float sequencer_navigator_current_zoom;
+    float sequencer_navigator_scroller_pos_x;
+    float sequencer_navigator_scroller_pos_y;
+    float sequencer_navigator_client_size_x;
+    float sequencer_navigator_client_size_y;
     std::optional<bool> is_content_splitter_open;                       // Version >= 12.0.0
     std::optional<bool> is_expression_splitter_open;                    // Version >= 12.0.0
     std::optional<bool> view_state_launch_panel;                        // Version < 12.0.0
