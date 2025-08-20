@@ -192,6 +192,77 @@ static fmtals::version detect_version(const std::string& creator)
     throw std::runtime_error("Unimplemented Ableton Live version");
 }
 
+template <typename T>
+void import_track_base(xml_node* node, T& track, const fmtals::version ver)
+{
+    xml_get_node_and_value(node, "LomId", track.lom_id);
+    xml_get_node_and_value(node, "LomIdView", track.lom_id_view);
+    xml_get_node_and_value(node, "EnvelopeModePreferred", track.envelope_mode_preferred);
+
+    xml_node* _delay_node = xml_get_node(node, "TrackDelay");
+    xml_get_node_and_value(_delay_node, "Value", track.track_delay_value);
+    xml_get_node_and_value(_delay_node, "IsValueSampleBased", track.track_delay_is_value_sample_based);
+
+    xml_node* _name_node = xml_get_node(node, "Name");
+    xml_get_node_and_value(_name_node, "EffectiveName", track.effective_name);
+    xml_get_node_and_value(_name_node, "UserName", track.user_name);
+    xml_get_node_and_value(_name_node, "Annotation", track.annotation);
+
+    if (ver >= fmtals::version::v_12_0_0) {
+        xml_get_node_and_value(node, "Color", track.color.emplace());
+    } else {
+        xml_get_node_and_value(node, "ColorIndex", track.color_index.emplace());
+    }
+
+    xml_get_node_and_value(node, "TrackGroupId", track.track_group_id);
+    xml_get_node_and_value(node, "TrackUnfolded", track.track_unfolded);
+
+    xml_node* _devices_list_node = xml_get_node(node, "DevicesListWrapper");
+    xml_get_value(_devices_list_node, "LomId", track.devices_list_wrapper_lom_id);
+
+    xml_node* _clip_slots_list_node = xml_get_node(node, "ClipSlotsListWrapper");
+    xml_get_value(_clip_slots_list_node, "LomId", track.clip_slots_list_wrapper_lom_id);
+
+    xml_get_node_and_value(node, "ViewData", track.view_data);
+}
+
+template <typename T>
+void export_track_base(xml_document& document, xml_node* node, const T& track, const fmtals::version ver)
+{
+    xml_create_node_and_value(document, node, "LomId", track.lom_id);
+    xml_create_node_and_value(document, node, "LomIdView", track.lom_id_view);
+    xml_create_node_and_value(document, node, "EnvelopeModePreferred", track.envelope_mode_preferred);
+
+    xml_node* _track_delay_node = xml_create_node(document, node, "TrackDelay");
+    xml_create_node_and_value(document, _track_delay_node, "Value", track.track_delay_value);
+    xml_create_node_and_value(document, _track_delay_node, "IsValueSampleBased", track.track_delay_is_value_sample_based);
+
+    xml_node* _track_name_node = xml_create_node(document, node, "Name");
+    xml_create_node_and_value(document, _track_name_node, "EffectiveName", track.effective_name);
+    xml_create_node_and_value(document, _track_name_node, "UserName", track.user_name);
+    xml_create_node_and_value(document, _track_name_node, "Annotation", track.annotation);
+    if (ver >= fmtals::version::v_12_0_0) {
+        xml_create_node_and_value(document, _track_name_node, "MemorizedFirstClipName", track.memorized_first_clip_name.value());
+    }
+
+    if (ver >= fmtals::version::v_12_0_0) {
+        xml_create_node_and_value(document, node, "Color", track.color.value());
+    } else {
+        xml_create_node_and_value(document, node, "ColorIndex", track.color_index.value());
+    }
+
+    xml_create_node_and_value(document, node, "TrackGroupId", track.track_group_id); // -1 vers master
+    xml_create_node_and_value(document, node, "TrackUnfolded", track.track_unfolded);
+
+    xml_node* _devices_list_node = xml_create_node(document, node, "DevicesListWrapper");
+    xml_create_value(document, _devices_list_node, "LomId", track.devices_list_wrapper_lom_id);
+
+    xml_node* _clip_slots_list_node = xml_create_node(document, node, "ClipSlotsListWrapper");
+    xml_create_value(document, _clip_slots_list_node, "LomId", track.clip_slots_list_wrapper_lom_id);
+
+    xml_create_node_and_value(document, node, "ViewData", track.view_data);
+}
+
 namespace fmtals {
 
 void import_project(std::istream& stream, project& proj, version& ver)
@@ -236,45 +307,41 @@ void import_project(std::istream& stream, project& proj, version& ver)
             using _track_type_t = std::decay_t<decltype(_track_visit)>;
 
             xml_get_value(_track_node, "Id", _track_visit.id);
-            xml_get_node_and_value(_track_node, "LomId", _track_visit.lom_id);
-            xml_get_node_and_value(_track_node, "LomIdView", _track_visit.lom_id_view);
-            xml_get_node_and_value(_track_node, "EnvelopeModePreferred", _track_visit.envelope_mode_preferred);
+            import_track_base(_track_node, _track_visit, ver);
 
-            xml_node* _delay_node = xml_get_node(_track_node, "TrackDelay");
-            xml_get_node_and_value(_delay_node, "Value", _track_visit.track_delay_value);
-            xml_get_node_and_value(_delay_node, "IsValueSampleBased", _track_visit.track_delay_is_value_sample_based);
-
-            xml_node* _name_node = xml_get_node(_track_node, "Name");
-            xml_get_node_and_value(_name_node, "EffectiveName", _track_visit.effective_name);
-            xml_get_node_and_value(_name_node, "UserName", _track_visit.user_name);
-            xml_get_node_and_value(_name_node, "Annotation", _track_visit.annotation);
-
-            if (ver >= version::v_12_0_0) {
-                xml_get_node_and_value(_track_node, "Color", _track_visit.color.emplace());
-            } else {
-                xml_get_node_and_value(_track_node, "ColorIndex", _track_visit.color_index.emplace());
-            }
-
-            // audio & midi specifics
-            if constexpr (std::is_same_v<_track_type_t, project::audio_track>) {
-                xml_get_node_and_value(_track_node, "TrackGroupId", _track_visit.track_group_id);
-                xml_get_node_and_value(_track_node, "TrackUnfolded", _track_visit.track_unfolded);
-                // devices list weapper TODO
-                // clip slots list weapper TODO
-                // view data TODO
-                xml_get_node_and_value(_track_node, "SavedPlayingSlot", _track_visit.saved_playing_slot);
-                xml_get_node_and_value(_track_node, "SavedPlayingOffset", _track_visit.saved_playing_offset);
-                xml_get_node_and_value(_track_node, "MidiFoldIn", _track_visit.midi_fold_in);
-                xml_get_node_and_value(_track_node, "MidiPrelisten", _track_visit.midi_prelisten);
-                xml_get_node_and_value(_track_node, "Freeze", _track_visit.freeze);
-                xml_get_node_and_value(_track_node, "VelocityDetail", _track_visit.velocity_detail);
-                xml_get_node_and_value(_track_node, "NeedArrangerRefreeze", _track_visit.need_arranger_refreeze);
-                xml_get_node_and_value(_track_node, "PostProcessFreezeClips", _track_visit.post_process_freeze_clips);
-                xml_get_node_and_value(_track_node, "MidiTargetPrefersFoldOrIsNotUniform", _track_visit.midi_target_prefers_fold_or_is_not_uniform);
-            }
+            xml_get_node_and_value(_track_node, "SavedPlayingSlot", _track_visit.saved_playing_slot);
+            xml_get_node_and_value(_track_node, "SavedPlayingOffset", _track_visit.saved_playing_offset);
+            xml_get_node_and_value(_track_node, "MidiFoldIn", _track_visit.midi_fold_in);
+            xml_get_node_and_value(_track_node, "MidiPrelisten", _track_visit.midi_prelisten);
+            xml_get_node_and_value(_track_node, "Freeze", _track_visit.freeze);
+            xml_get_node_and_value(_track_node, "VelocityDetail", _track_visit.velocity_detail);
+            xml_get_node_and_value(_track_node, "NeedArrangerRefreeze", _track_visit.need_arranger_refreeze);
+            xml_get_node_and_value(_track_node, "PostProcessFreezeClips", _track_visit.post_process_freeze_clips);
+            xml_get_node_and_value(_track_node, "MidiTargetPrefersFoldOrIsNotUniform", _track_visit.midi_target_prefers_fold_or_is_not_uniform);
 
             xml_node* _device_chain_node = xml_get_node(_track_node, "DeviceChain");
-            // TODO mixer
+            xml_node* _automation_lanes_node = xml_get_node(_device_chain_node, "AutomationLanes");
+            xml_node* _automation_lanes_child_node = xml_get_node(_automation_lanes_node, "AutomationLanes");
+            for (xml_node* _automation_lane_node : xml_get_nodes(_automation_lanes_child_node)) {
+                project::automation_lane& _automation_lane = _track_visit.automation_lanes.emplace_back();
+                xml_get_node_and_value(_automation_lane_node, "SelectedDevice", _automation_lane.selected_device);
+                xml_get_node_and_value(_automation_lane_node, "SelectedEnvelope", _automation_lane.selected_envelope);
+                xml_get_node_and_value(_automation_lane_node, "IsContentSelected", _automation_lane.is_content_selected);
+                xml_get_node_and_value(_automation_lane_node, "LaneHeight", _automation_lane.lane_height);
+                xml_get_node_and_value(_automation_lane_node, "FadeViewVisible", _automation_lane.fade_view_visible);
+            }
+            xml_get_node_and_value(_automation_lanes_node, "PermanentLanesAreVisible", _track_visit.permanent_lanes_are_visible);
+
+            xml_node* _envelope_chooser_node = xml_get_node(_device_chain_node, "EnvelopeChooser");
+            xml_get_node_and_value(_envelope_chooser_node, "SelectedDevice", _track_visit.envelope_chooser_selected_device);
+            xml_get_node_and_value(_envelope_chooser_node, "SelectedEnvelope", _track_visit.envelope_chooser_selected_envelope);
+
+            // AudioInputRouting TODO
+            // MidiInputRouting TODO
+            // AudioOutputRouting TODO
+            // MidiOutputRouting TODO
+            // Mixer TODO
+
             xml_node* _main_sequencer_node = xml_get_node(_device_chain_node, "MainSequencer");
             xml_node* _sample_node = xml_get_node(_main_sequencer_node, "Sample");
             xml_node* _arranger_automation_node = xml_get_node(_sample_node, "ArrangerAutomation");
@@ -356,29 +423,41 @@ void import_project(std::istream& stream, project& proj, version& ver)
                     }
                 }
             }
+
+            // Inner DeviceChain TODO
         },
             _user_track);
 
         proj.tracks.emplace_back(_user_track);
     }
 
+    xml_node* _master_track_node;
     if (ver >= version::v_12_0_0) {
-        xml_node* _main_track = xml_get_node(_liveset_node, "MainTrack");
-        // TODO
-
+        _master_track_node = xml_get_node(_liveset_node, "MainTrack");
     } else {
-        xml_node* _master_track = xml_get_node(_liveset_node, "MasterTrack");
-        // TODO
+        _master_track_node = xml_get_node(_liveset_node, "MasterTrack");
     }
-
+    import_track_base(_master_track_node, proj.project_master_track, ver);
+    // TODO device chain
+    
     xml_node* _pre_hear_track = xml_get_node(_liveset_node, "PreHearTrack");
-    // TODO
+    import_track_base(_pre_hear_track, proj.project_prehear_track, ver);
+    // TODO device chain
 
     for (xml_node* _sends_pre_node : xml_get_nodes(xml_get_node(_liveset_node, "SendsPre"))) {
         // TODO
     }
 
-    // scenes TODO???
+    for (xml_node* _scene_node : xml_get_nodes(xml_get_node(_liveset_node, "SceneNames"))) {
+        project::scene& _scene = proj.scene_names.emplace_back();
+        xml_get_value(_scene_node, "Value", _scene.value);
+        xml_get_node_and_value(_scene_node, "Annotation", _scene.annotation);
+        xml_get_node_and_value(_scene_node, "ColorIndex", _scene.color_index);
+        xml_get_node_and_value(_scene_node, "LomId", _scene.lom_id);
+
+        xml_node* _clip_slots_list_wrapper = xml_get_node(_scene_node, "ClipSlotsListWrapper");
+        xml_get_value(_clip_slots_list_wrapper, "LomId", _scene.clip_slots_list_wrapper_lom_id);
+    }
 
     xml_node* _transport_node = xml_get_node(_liveset_node, "Transport");
     xml_get_node_and_value(_transport_node, "PhaseNudgeTempo", proj.transport_phase_nudge_tempo);
@@ -389,9 +468,6 @@ void import_project(std::istream& stream, project& proj, version& ver)
     xml_get_node_and_value(_transport_node, "CurrentTime", proj.transport_current_time);
     xml_get_node_and_value(_transport_node, "PunchIn", proj.transport_punch_in);
     xml_get_node_and_value(_transport_node, "PunchOut", proj.transport_punch_out);
-    if (ver >= version::v_12_0_0) {
-        // TODO metronome_tick_duration for 12
-    }
     xml_get_node_and_value(_transport_node, "DrawMode", proj.transport_draw_mode);
     if (ver < version::v_12_0_0) {
         xml_get_node_and_value(_transport_node, "ComputerKeyboardIsEnabled", proj.transport_computer_keyboard_is_enabled.emplace());
@@ -426,9 +502,11 @@ void import_project(std::istream& stream, project& proj, version& ver)
     xml_node* _sequencer_navigator_node = xml_get_node(_liveset_node, "SequencerNavigator");
     xml_node* _beat_time_helper_node = xml_get_node(_sequencer_navigator_node, "BeatTimeHelper");
     xml_get_node_and_value(_beat_time_helper_node, "CurrentZoom", proj.sequencer_navigator_current_zoom);
+
     xml_node* _scroller_pos_node = xml_get_node(_sequencer_navigator_node, "ScrollerPos");
     xml_get_value(_scroller_pos_node, "X", proj.sequencer_navigator_scroller_pos_x);
     xml_get_value(_scroller_pos_node, "Y", proj.sequencer_navigator_scroller_pos_y);
+
     xml_node* _client_size_node = xml_get_node(_sequencer_navigator_node, "ClientSize");
     xml_get_value(_client_size_node, "X", proj.sequencer_navigator_client_size_x);
     xml_get_value(_client_size_node, "Y", proj.sequencer_navigator_client_size_y);
@@ -445,23 +523,32 @@ void import_project(std::istream& stream, project& proj, version& ver)
         xml_get_node_and_value(_content_splitter_node, "Size", proj.content_splitter_properties_size.emplace());
     }
 
-    // view states
     xml_get_node_and_value(_liveset_node, "ViewStateFxSlotCount", proj.view_state_fx_slot_count);
     xml_get_node_and_value(_liveset_node, "ViewStateSessionMixerHeight", proj.view_state_session_mixer_height);
 
+    xml_node* _locators_node = xml_get_node(_liveset_node, "Locators");
+    xml_node* _locators_inner_node = xml_get_node(_locators_node, "Locators");
     // locators TODO
+    (void)_locators_inner_node;
 
+    xml_node* _detail_clip_keys_midi_node = xml_get_node(_liveset_node, "DetailClipKeyMidis");
     // detail clip keys midi TODO
+    (void)_detail_clip_keys_midi_node;
 
-    // tracks list wrapper TODO
+    xml_node* _tracks_list_wrapper_node = xml_get_node(_liveset_node, "TracksListWrapper");
+    xml_get_value(_tracks_list_wrapper_node, "LomId", proj.tracks_list_wrapper_lom_id);
 
-    // visible tracks list wrapper TODO
+    xml_node* _visible_tracks_list_wrapper_node = xml_get_node(_liveset_node, "VisibleTracksListWrapper");
+    xml_get_value(_visible_tracks_list_wrapper_node, "LomId", proj.visible_tracks_list_wrapper_lom_id);
 
-    // return tracks list wrapper TODO
+    xml_node* _return_tracks_list_wrapper_node = xml_get_node(_liveset_node, "ReturnTracksListWrapper");
+    xml_get_value(_return_tracks_list_wrapper_node, "LomId", proj.return_tracks_list_wrapper_lom_id);
 
-    // scenes list wrapper TODO
+    xml_node* _scenes_list_wrapper_node = xml_get_node(_liveset_node, "ScenesListWrapper");
+    xml_get_value(_scenes_list_wrapper_node, "LomId", proj.scenes_list_wrapper_lom_id);
 
-    // cue points list wrapper TODO
+    xml_node* _cue_points_list_wrapper_node = xml_get_node(_liveset_node, "CuePointsListWrapper");
+    xml_get_value(_cue_points_list_wrapper_node, "LomId", proj.cue_points_list_wrapper_lom_id);
 
     xml_get_node_and_value(_liveset_node, "ChooserBar", proj.chooser_bar);
     xml_get_node_and_value(_liveset_node, "Annotation", proj.annotation);
@@ -470,20 +557,49 @@ void import_project(std::istream& stream, project& proj, version& ver)
     xml_get_node_and_value(_liveset_node, "CrossfadeCurve", proj.crossfade_curve);
     xml_get_node_and_value(_liveset_node, "LatencyCompensation", proj.latency_compensation);
     xml_get_node_and_value(_liveset_node, "HighlightedTrackIndex", proj.highlighted_track_index);
-    xml_get_node_and_value(_liveset_node, "ArrangementOverdub", proj.arrangement_overdub);
 
-    // color sequence index TODO
-    // AutoColorPickerForPlayerAndGroupTracks TODO
-    // AutoColorPickerForReturnAndMasterTracks TODO
-    // ViewData TODO
-    // UseWarperLegacyHiQMode TODO
-    // VideoWindowRect TODO
-    // ShowVideoWindow TODO
-    // TrackHeaderWidth TODO
-    // ViewStateArrangerHasDetail TODO
-    // ViewStateSessionHasDetail TODO
-    // ViewStateDetailIsSample TODO
-    // ViewStates TODO
+    xml_node* _groove_pool_node = xml_get_node(_liveset_node, "GroovePool");
+    xml_node* _grooves_node = xml_get_node(_groove_pool_node, "Grooves");
+    // grooves TODO
+    (void)_grooves_node;
+
+    xml_get_node_and_value(_liveset_node, "ArrangementOverdub", proj.arrangement_overdub);
+    xml_get_node_and_value(_liveset_node, "ColorSequenceIndex", proj.color_sequence_index);
+
+    xml_node* _acpf_player_and_group_tracks_node = xml_get_node(_liveset_node, "AutoColorPickerForPlayerAndGroupTracks");
+    xml_get_node_and_value(_acpf_player_and_group_tracks_node, "NextColorIndex", proj.auto_color_picker_for_player_and_group_tracks);
+
+    xml_node* _acpf_return_and_master_tracks_node = xml_get_node(_liveset_node, "AutoColorPickerForReturnAndMasterTracks");
+    xml_get_node_and_value(_acpf_return_and_master_tracks_node, "NextColorIndex", proj.auto_color_picker_for_return_and_master_tracks);
+
+    xml_get_node_and_value(_liveset_node, "ViewData", proj.view_data);
+    xml_get_node_and_value(_liveset_node, "UseWarperLegacyHiQMode", proj.use_warper_legacy_hiq_mode);
+
+    xml_node* _video_window_rect_node = xml_get_node(_liveset_node, "VideoWindowRect");
+    xml_get_value(_video_window_rect_node, "Top", proj.video_window_rect_top);
+    xml_get_value(_video_window_rect_node, "Left", proj.video_window_rect_left);
+    xml_get_value(_video_window_rect_node, "Bottom", proj.video_window_rect_bottom);
+    xml_get_value(_video_window_rect_node, "Right", proj.video_window_rect_right);
+
+    xml_get_node_and_value(_liveset_node, "ShowVideoWindow", proj.show_video_window);
+    xml_get_node_and_value(_liveset_node, "TrackHeaderWidth", proj.track_header_width);
+    xml_get_node_and_value(_liveset_node, "ViewStateArrangerHasDetail", proj.view_state_arranger_has_detail);
+    xml_get_node_and_value(_liveset_node, "ViewStateSessionHasDetail", proj.view_state_session_has_detail);
+    xml_get_node_and_value(_liveset_node, "ViewStateDetailIsSample", proj.view_state_detail_is_sample);
+
+    xml_node* _view_states_node = xml_get_node(_liveset_node, "ViewStates");
+    xml_get_node_and_value(_view_states_node, "SessionIO", proj.view_states_session_io);
+    xml_get_node_and_value(_view_states_node, "SessionSends", proj.view_states_session_sends);
+    xml_get_node_and_value(_view_states_node, "SessionReturns", proj.view_states_session_returns);
+    xml_get_node_and_value(_view_states_node, "SessionMixer", proj.view_states_session_mixer);
+    xml_get_node_and_value(_view_states_node, "SessionTrackDelay", proj.view_states_session_track_delay);
+    xml_get_node_and_value(_view_states_node, "SessionCrossFade", proj.view_states_session_cross_fade);
+    xml_get_node_and_value(_view_states_node, "SessionShowOverView", proj.view_states_session_show_over_view);
+    xml_get_node_and_value(_view_states_node, "ArrangerIO", proj.view_states_arranger_io);
+    xml_get_node_and_value(_view_states_node, "ArrangerReturns", proj.view_states_arranger_returns);
+    xml_get_node_and_value(_view_states_node, "ArrangerMixer", proj.view_states_arranger_mixer);
+    xml_get_node_and_value(_view_states_node, "ArrangerTrackDelay", proj.view_states_arranger_track_delay);
+    xml_get_node_and_value(_view_states_node, "ArrangerShowOverView", proj.view_states_arranger_show_over_view);
 }
 
 void export_project(std::ostream& stream, const project& proj, const version& ver)
@@ -502,68 +618,21 @@ void export_project(std::ostream& stream, const project& proj, const version& ve
     xml_create_value(_xml_doc, _ableton_node, "Creator", proj.creator);
     xml_create_value(_xml_doc, _ableton_node, "Revision", proj.revision);
 
-    // liveset
     xml_node* _liveset_node = xml_create_node(_xml_doc, _ableton_node, "LiveSet");
-    if (ver >= version::v_11_0_0) {
-        // xml_create_node_and_value(_xml_doc, _liveset_node, "NextPointeeId", std::string("36073"));
-    }
     xml_create_node_and_value(_xml_doc, _liveset_node, "OverwriteProtectionNumber", proj.overwrite_protection_number);
     xml_create_node_and_value(_xml_doc, _liveset_node, "LomId", proj.lom_id);
     xml_create_node_and_value(_xml_doc, _liveset_node, "LomIdView", proj.lom_id_view);
 
-    // tracks
     xml_node* _tracks_node = xml_create_node(_xml_doc, _liveset_node, "Tracks");
     for (const project::user_track& _track : proj.tracks) {
 
-        // track visit
         xml_node* _track_node = xml_create_node(_xml_doc, _tracks_node, "AudioTrack");
+
         std::visit([&](auto& _track_visit) {
             using _track_type_t = std::decay_t<decltype(_track_visit)>;
 
             xml_create_value(_xml_doc, _track_node, "Id", _track_visit.id);
-            xml_create_node_and_value(_xml_doc, _track_node, "LomId", _track_visit.lom_id);
-            xml_create_node_and_value(_xml_doc, _track_node, "LomIdView", _track_visit.lom_id_view);
-
-            // TODO IsContentSelectedInDocument
-            // TODO PreferredContentViewMode
-
-            // track delay
-            xml_node* _track_delay_node = xml_create_node(_xml_doc, _track_node, "TrackDelay");
-            xml_create_node_and_value(_xml_doc, _track_delay_node, "Value", _track_visit.track_delay_value);
-            xml_create_node_and_value(_xml_doc, _track_delay_node, "IsValueSampleBased", _track_visit.track_delay_is_value_sample_based);
-
-            // name
-            xml_node* _track_name_node = xml_create_node(_xml_doc, _track_node, "Name");
-            xml_create_node_and_value(_xml_doc, _track_name_node, "EffectiveName", _track_visit.effective_name);
-            xml_create_node_and_value(_xml_doc, _track_name_node, "UserName", _track_visit.user_name);
-            xml_create_node_and_value(_xml_doc, _track_name_node, "Annotation", _track_visit.annotation);
-            if (ver >= version::v_12_0_0) {
-                xml_create_node_and_value(_xml_doc, _track_name_node, "MemorizedFirstClipName", _track_visit.memorized_first_clip_name.value());
-            }
-
-            // color
-            if (ver >= version::v_12_0_0) {
-                xml_create_node_and_value(_xml_doc, _track_node, "Color", _track_visit.color.value());
-            } else {
-                xml_create_node_and_value(_xml_doc, _track_node, "ColorIndex", _track_visit.color_index.value());
-            }
-
-            // xml_create_node(_xml_doc, xml_create_node(_xml_doc, _track_node, "AutomationEnvelopes"), "Envelopes");
-
-            xml_create_node_and_value(_xml_doc, _track_node, "TrackGroupId", _track_visit.track_group_id); // -1 vers master
-            xml_create_node_and_value(_xml_doc, _track_node, "TrackUnfolded", _track_visit.track_unfolded);
-            // xml_create_node_and_value(_xml_doc, _track_node, "DevicesListWrapper", { { "LomId", "0" } });
-            // xml_create_node_and_value(_xml_doc, _track_node, "ClipSlotsListWrapper", { { "LomId", "0" } });
-            // xml_create_node_and_value(_xml_doc, _track_node, "ViewData", { { "Value", "{}" } });
-
-            // take lanes for 12
-            // xml_node* _take_lanes_node = xml_create_node(_xml_doc, _track_node, "TakeLanes");
-            // {
-            //     xml_create_node(_xml_doc, _take_lanes_node, "TakeLanes");
-            //     xml_create_node(_xml_doc, _take_lanes_node, "AreTakeLanesFolded", { { "Value", "true" } });
-            // }
-
-            // xml_create_node(_xml_doc, _track_node, "LinkedTrackGroupId", { { "Value", "-1" } });
+            export_track_base(_xml_doc, _track_node, _track_visit, ver);
             xml_create_node_and_value(_xml_doc, _track_node, "SavedPlayingSlot", _track_visit.saved_playing_slot);
             xml_create_node_and_value(_xml_doc, _track_node, "SavedPlayingOffset", _track_visit.saved_playing_offset);
             xml_create_node_and_value(_xml_doc, _track_node, "MidiFoldIn", _track_visit.midi_fold_in); // 9 only
@@ -576,101 +645,107 @@ void export_project(std::ostream& stream, const project& proj, const version& ve
 
             // device chain
             xml_node* _device_chain_node = xml_create_node(_xml_doc, _track_node, "DeviceChain");
-            {
-                xml_node* _automation_lanes_node = xml_create_node(_xml_doc, _device_chain_node, "AutomationLanes");
-                xml_node* _automation_lanes_child_node = xml_create_node(_xml_doc, _automation_lanes_node, "AutomationLanes");
 
-                // automation lane 0
-                xml_node* _automation_lane_0_node = xml_create_node(_xml_doc, _automation_lanes_child_node, "AutomationLane");
-                xml_create_value(_xml_doc, _automation_lane_0_node, "Id", 0);
-                xml_create_value(_xml_doc, _automation_lane_0_node, "SelectedDevice", 0);
-                xml_create_value(_xml_doc, _automation_lane_0_node, "SelectedEnvelope", 0);
-                xml_create_value(_xml_doc, _automation_lane_0_node, "IsContentSelectedInDocument", false);
-                xml_create_value(_xml_doc, _automation_lane_0_node, "LaneHeight", 68);
-                xml_create_value(_xml_doc, _automation_lane_0_node, "AreAdditionalAutomationLanesFolded", false);
-
-                // clip envelope chooser
-                // xml_node* _clip_envelope_chooser_node = xml_create_node(_xml_doc, _device_chain_node, "ClipEnvelopeChooserViewState");
-                // {
-                //     xml_create_node(_xml_doc, _clip_envelope_chooser_node, "SelectedDevice", { { "Value", "0" } });
-                //     xml_create_node(_xml_doc, _clip_envelope_chooser_node, "SelectedEnvelope", { { "Value", "0" } });
-                //     xml_create_node(_xml_doc, _clip_envelope_chooser_node, "PreferModulationVisible", { { "Value", "false" } });
-                // }
-
-                // // audio input routing
-                // xml_node* _audio_input_routing_node = xml_create_node(_xml_doc, _device_chain_node, "AudioInputRouting");
-                // {
-                //     xml_create_node(_xml_doc, _audio_input_routing_node, "Target", { { "Value", "AudioIn/External/M0" } });
-                //     xml_create_node(_xml_doc, _audio_input_routing_node, "UpperDisplayString", { { "Value", "Ext. In" } });
-                //     xml_create_node(_xml_doc, _audio_input_routing_node, "LowerDisplayString", { { "Value", "1" } });
-
-                //     // mpe settings
-                //     xml_node* _mpe_settings_node = xml_create_node(_xml_doc, _audio_input_routing_node, "MpeSettings");
-                //     {
-                //         xml_create_node(_xml_doc, _mpe_settings_node, "ZoneType", { { "Value", "0" } });
-                //         xml_create_node(_xml_doc, _mpe_settings_node, "FirstNoteChannel", { { "Value", "1" } });
-                //         xml_create_node(_xml_doc, _mpe_settings_node, "LastNoteChannel", { { "Value", "15" } });
-                //     }
-                // }
-
-                // // midi input routing
-                // xml_node* _midi_input_routing_node = xml_create_node(_xml_doc, _device_chain_node, "MidiInputRouting");
-                // {
-                //     xml_create_node(_xml_doc, _midi_input_routing_node, "Target", { { "Value", "MidiIn/External.All/-1" } });
-                //     xml_create_node(_xml_doc, _midi_input_routing_node, "UpperDisplayString", { { "Value", "Ext: All Ins" } });
-                //     xml_create_node(_xml_doc, _midi_input_routing_node, "LowerDisplayString", { { "Value", "" } });
-
-                //     // mpe settings
-                //     xml_node* _mpe_settings_node = xml_create_node(_xml_doc, _midi_input_routing_node, "MpeSettings");
-                //     {
-                //         xml_create_node(_xml_doc, _mpe_settings_node, "ZoneType", { { "Value", "0" } });
-                //         xml_create_node(_xml_doc, _mpe_settings_node, "FirstNoteChannel", { { "Value", "1" } });
-                //         xml_create_node(_xml_doc, _mpe_settings_node, "LastNoteChannel", { { "Value", "15" } });
-                //     }
-                // }
-
-                // // audio output routing
-                // xml_node* _audio_output_routing_node = xml_create_node(_xml_doc, _device_chain_node, "AudioOutputRouting");
-                // {
-                //     xml_create_node(_xml_doc, _audio_output_routing_node, "Target", { { "Value", "AudioOut/Main" } });
-                //     xml_create_node(_xml_doc, _audio_output_routing_node, "UpperDisplayString", { { "Value", "Main" } });
-                //     xml_create_node(_xml_doc, _audio_output_routing_node, "LowerDisplayString", { { "Value", "" } });
-
-                //     // mpe settings
-                //     xml_node* _mpe_settings_node = xml_create_node(_xml_doc, _audio_output_routing_node, "MpeSettings");
-                //     {
-                //         xml_create_node(_xml_doc, _mpe_settings_node, "ZoneType", { { "Value", "0" } });
-                //         xml_create_node(_xml_doc, _mpe_settings_node, "FirstNoteChannel", { { "Value", "1" } });
-                //         xml_create_node(_xml_doc, _mpe_settings_node, "LastNoteChannel", { { "Value", "15" } });
-                //     }
-                // }
-
-                // // midi output routing
-                // xml_node* _midi_output_routing_node = xml_create_node(_xml_doc, _device_chain_node, "MidiOutputRouting");
-                // {
-                //     xml_create_node(_xml_doc, _midi_output_routing_node, "Target", { { "Value", "MidiOut/None" } });
-                //     xml_create_node(_xml_doc, _midi_output_routing_node, "UpperDisplayString", { { "Value", "None" } });
-                //     xml_create_node(_xml_doc, _midi_output_routing_node, "LowerDisplayString", { { "Value", "" } });
-
-                //     // mpe settings
-                //     xml_node* _mpe_settings_node = xml_create_node(_xml_doc, _midi_output_routing_node, "MpeSettings");
-                //     {
-                //         xml_create_node(_xml_doc, _mpe_settings_node, "ZoneType", { { "Value", "0" } });
-                //         xml_create_node(_xml_doc, _mpe_settings_node, "FirstNoteChannel", { { "Value", "1" } });
-                //         xml_create_node(_xml_doc, _mpe_settings_node, "LastNoteChannel", { { "Value", "15" } });
-                //     }
-                // }
-
-                // mixer
-                xml_node* _mixer_node = xml_create_node(_xml_doc, _device_chain_node, "Mixer");
+            xml_node* _automation_lanes_node = xml_create_node(_xml_doc, _device_chain_node, "AutomationLanes");
+            xml_node* _automation_lanes_child_node = xml_create_node(_xml_doc, _automation_lanes_node, "AutomationLanes");
+            for (const project::automation_lane _automation_lane : _track_visit.automation_lanes) {
+                xml_node* _automation_lane_node = xml_create_node(_xml_doc, _automation_lanes_child_node, "AutomationLane");
+                xml_create_node_and_value(_xml_doc, _automation_lane_node, "SelectedDevice", _automation_lane.selected_device);
+                xml_create_node_and_value(_xml_doc, _automation_lane_node, "SelectedEnvelope", _automation_lane.selected_envelope);
+                xml_create_node_and_value(_xml_doc, _automation_lane_node, "IsContentSelected", _automation_lane.is_content_selected);
+                xml_create_node_and_value(_xml_doc, _automation_lane_node, "LaneHeight", _automation_lane.lane_height);
+                xml_create_node_and_value(_xml_doc, _automation_lane_node, "FadeViewVisible", _automation_lane.fade_view_visible);
             }
+            xml_create_node_and_value(_xml_doc, _automation_lanes_node, "PermanentLanesAreVisible", _track_visit.permanent_lanes_are_visible);
+
+            xml_node* _envelope_chooser_node = xml_create_node(_xml_doc, _device_chain_node, "EnvelopeChooser");
+            xml_create_node_and_value(_xml_doc, _envelope_chooser_node, "SelectedDevice", _track_visit.envelope_chooser_selected_device);
+            xml_create_node_and_value(_xml_doc, _envelope_chooser_node, "SelectedEnvelope", _track_visit.envelope_chooser_selected_envelope);
+
+            // // audio input routing
+            // xml_node* _audio_input_routing_node = xml_create_node(_xml_doc, _device_chain_node, "AudioInputRouting");
+            // {
+            //     xml_create_node(_xml_doc, _audio_input_routing_node, "Target", { { "Value", "AudioIn/External/M0" } });
+            //     xml_create_node(_xml_doc, _audio_input_routing_node, "UpperDisplayString", { { "Value", "Ext. In" } });
+            //     xml_create_node(_xml_doc, _audio_input_routing_node, "LowerDisplayString", { { "Value", "1" } });
+
+            //     // mpe settings
+            //     xml_node* _mpe_settings_node = xml_create_node(_xml_doc, _audio_input_routing_node, "MpeSettings");
+            //     {
+            //         xml_create_node(_xml_doc, _mpe_settings_node, "ZoneType", { { "Value", "0" } });
+            //         xml_create_node(_xml_doc, _mpe_settings_node, "FirstNoteChannel", { { "Value", "1" } });
+            //         xml_create_node(_xml_doc, _mpe_settings_node, "LastNoteChannel", { { "Value", "15" } });
+            //     }
+            // }
+
+            // // midi input routing
+            // xml_node* _midi_input_routing_node = xml_create_node(_xml_doc, _device_chain_node, "MidiInputRouting");
+            // {
+            //     xml_create_node(_xml_doc, _midi_input_routing_node, "Target", { { "Value", "MidiIn/External.All/-1" } });
+            //     xml_create_node(_xml_doc, _midi_input_routing_node, "UpperDisplayString", { { "Value", "Ext: All Ins" } });
+            //     xml_create_node(_xml_doc, _midi_input_routing_node, "LowerDisplayString", { { "Value", "" } });
+
+            //     // mpe settings
+            //     xml_node* _mpe_settings_node = xml_create_node(_xml_doc, _midi_input_routing_node, "MpeSettings");
+            //     {
+            //         xml_create_node(_xml_doc, _mpe_settings_node, "ZoneType", { { "Value", "0" } });
+            //         xml_create_node(_xml_doc, _mpe_settings_node, "FirstNoteChannel", { { "Value", "1" } });
+            //         xml_create_node(_xml_doc, _mpe_settings_node, "LastNoteChannel", { { "Value", "15" } });
+            //     }
+            // }
+
+            // // audio output routing
+            // xml_node* _audio_output_routing_node = xml_create_node(_xml_doc, _device_chain_node, "AudioOutputRouting");
+            // {
+            //     xml_create_node(_xml_doc, _audio_output_routing_node, "Target", { { "Value", "AudioOut/Main" } });
+            //     xml_create_node(_xml_doc, _audio_output_routing_node, "UpperDisplayString", { { "Value", "Main" } });
+            //     xml_create_node(_xml_doc, _audio_output_routing_node, "LowerDisplayString", { { "Value", "" } });
+
+            //     // mpe settings
+            //     xml_node* _mpe_settings_node = xml_create_node(_xml_doc, _audio_output_routing_node, "MpeSettings");
+            //     {
+            //         xml_create_node(_xml_doc, _mpe_settings_node, "ZoneType", { { "Value", "0" } });
+            //         xml_create_node(_xml_doc, _mpe_settings_node, "FirstNoteChannel", { { "Value", "1" } });
+            //         xml_create_node(_xml_doc, _mpe_settings_node, "LastNoteChannel", { { "Value", "15" } });
+            //     }
+            // }
+
+            // // midi output routing
+            // xml_node* _midi_output_routing_node = xml_create_node(_xml_doc, _device_chain_node, "MidiOutputRouting");
+            // {
+            //     xml_create_node(_xml_doc, _midi_output_routing_node, "Target", { { "Value", "MidiOut/None" } });
+            //     xml_create_node(_xml_doc, _midi_output_routing_node, "UpperDisplayString", { { "Value", "None" } });
+            //     xml_create_node(_xml_doc, _midi_output_routing_node, "LowerDisplayString", { { "Value", "" } });
+
+            //     // mpe settings
+            //     xml_node* _mpe_settings_node = xml_create_node(_xml_doc, _midi_output_routing_node, "MpeSettings");
+            //     {
+            //         xml_create_node(_xml_doc, _mpe_settings_node, "ZoneType", { { "Value", "0" } });
+            //         xml_create_node(_xml_doc, _mpe_settings_node, "FirstNoteChannel", { { "Value", "1" } });
+            //         xml_create_node(_xml_doc, _mpe_settings_node, "LastNoteChannel", { { "Value", "15" } });
+            //     }
+            // }
+
+            // mixer
+            xml_node* _mixer_node = xml_create_node(_xml_doc, _device_chain_node, "Mixer");
         },
             _track);
     }
 
-    // master/main track TODO
+    // master/main track
+    xml_node* _master_track_node;
+    if (ver >= version::v_12_0_0) {
+        _master_track_node = xml_create_node(_xml_doc, _liveset_node, "MainTrack");
+    } else {
+        _master_track_node = xml_create_node(_xml_doc, _liveset_node, "MasterTrack");
+    }
+    export_track_base(_xml_doc, _master_track_node, proj.project_master_track, ver);
 
-    // prehear track TODO
+    // todo device chain
+
+    // prehear track
+    xml_node* _pre_hear_track_node = xml_create_node(_xml_doc, _liveset_node, "PreHearTrack");
+    export_track_base(_xml_doc, _pre_hear_track_node, proj.project_prehear_track, ver);
 
     // sends pre
     xml_node* _sends_pre_node = xml_create_node(_xml_doc, _liveset_node, "SendsPre");
@@ -678,7 +753,17 @@ void export_project(std::ostream& stream, const project& proj, const version& ve
         xml_create_node_and_value(_xml_doc, _sends_pre_node, "SendPreBool", _send_pre);
     }
 
-    // scenes TODO??
+    xml_node* _scene_names_node = xml_create_node(_xml_doc, _liveset_node, "SceneNames");
+    for (const project::scene& _scene : proj.scene_names) {
+        xml_node* _scene_node = xml_create_node(_xml_doc, _scene_names_node, "Scene");
+        xml_create_value(_xml_doc, _scene_node, "Value", _scene.value);
+        xml_create_node_and_value(_xml_doc, _scene_node, "Annotation", _scene.annotation);
+        xml_create_node_and_value(_xml_doc, _scene_node, "ColorIndex", _scene.color_index);
+        xml_create_node_and_value(_xml_doc, _scene_node, "LomId", _scene.lom_id);
+
+        xml_node* _clip_slots_list_wrapper_node = xml_create_node(_xml_doc, _scene_node, "ClipSlotsListWrapper");
+        xml_create_value(_xml_doc, _clip_slots_list_wrapper_node, "LomId", _scene.clip_slots_list_wrapper_lom_id);
+    }
 
     xml_node* _transport_node = xml_create_node(_xml_doc, _liveset_node, "Transport");
     xml_create_node_and_value(_xml_doc, _transport_node, "PhaseNudgeTempo", proj.transport_phase_nudge_tempo);
@@ -745,14 +830,29 @@ void export_project(std::ostream& stream, const project& proj, const version& ve
     xml_create_node_and_value(_xml_doc, _liveset_node, "ViewStateFxSlotCount", proj.view_state_fx_slot_count);
     xml_create_node_and_value(_xml_doc, _liveset_node, "ViewStateSessionMixerHeight", proj.view_state_session_mixer_height);
 
+    xml_node* _locators_node = xml_create_node(_xml_doc, _liveset_node, "Locators");
+    xml_node* _locators_inner_node = xml_create_node(_xml_doc, _locators_node, "Locators");
     // locators TODO
+    (void)_locators_inner_node;
 
+    xml_node* _detail_clip_keys_midi_node = xml_create_node(_xml_doc, _liveset_node, "DetailClipKeyMidis");
     // detail clip keys midi TODO
-    // tracks list wrapper TODO
-    // visible tracks list wrapper TODO
-    // return tracks list wrapper TODO
-    // scenes list wrapper TODO
-    // cue points list wrapper TODO
+    (void)_detail_clip_keys_midi_node;
+
+    xml_node* _tracks_list_wrapper_node = xml_create_node(_xml_doc, _liveset_node, "TracksListWrapper");
+    xml_create_value(_xml_doc, _tracks_list_wrapper_node, "LomId", proj.tracks_list_wrapper_lom_id);
+
+    xml_node* _visible_tracks_list_wrapper_node = xml_create_node(_xml_doc, _liveset_node, "VisibleTracksListWrapper");
+    xml_create_value(_xml_doc, _visible_tracks_list_wrapper_node, "LomId", proj.visible_tracks_list_wrapper_lom_id);
+
+    xml_node* _return_tracks_list_wrapper_node = xml_create_node(_xml_doc, _liveset_node, "ReturnTracksListWrapper");
+    xml_create_value(_xml_doc, _return_tracks_list_wrapper_node, "LomId", proj.return_tracks_list_wrapper_lom_id);
+
+    xml_node* _scenes_list_wrapper_node = xml_create_node(_xml_doc, _liveset_node, "ScenesListWrapper");
+    xml_create_value(_xml_doc, _scenes_list_wrapper_node, "LomId", proj.scenes_list_wrapper_lom_id);
+
+    xml_node* _cue_points_list_wrapper_node = xml_create_node(_xml_doc, _liveset_node, "CuePointsListWrapper");
+    xml_create_value(_xml_doc, _cue_points_list_wrapper_node, "LomId", proj.cue_points_list_wrapper_lom_id);
 
     xml_create_node_and_value(_xml_doc, _liveset_node, "ChooserBar", proj.chooser_bar);
     xml_create_node_and_value(_xml_doc, _liveset_node, "Annotation", proj.annotation);
@@ -762,20 +862,48 @@ void export_project(std::ostream& stream, const project& proj, const version& ve
     xml_create_node_and_value(_xml_doc, _liveset_node, "LatencyCompensation", proj.latency_compensation);
     xml_create_node_and_value(_xml_doc, _liveset_node, "HighlightedTrackIndex", proj.highlighted_track_index);
 
+    xml_node* _groove_pool_node = xml_create_node(_xml_doc, _liveset_node, "GroovePool");
+    xml_node* _grooves_node = xml_create_node(_xml_doc, _groove_pool_node, "Grooves");
     // grooves TODO
-    // ArrangementOverdub TODO
-    // ColorSequenceIndex TODO
-    // AutoColorPickerForPlayerAndGroupTracks TODO
-    // AutoColorPickerForReturnAndMasterTracks TODO
-    // ViewData TODO
-    // UseWarperLegacyHiQMode TODO
-    // VideoWindowRect TODO
-    // ShowVideoWindow TODO
-    // TrackHeaderWidth TODO
-    // ViewStateArrangerHasDetail TODO
-    // ViewStateSessionHasDetail TODO
-    // ViewStateDetailIsSample TODO
-    // ViewStates TODO
+    (void)_grooves_node;
+
+    xml_create_node_and_value(_xml_doc, _liveset_node, "ArrangementOverdub", proj.arrangement_overdub);
+    xml_create_node_and_value(_xml_doc, _liveset_node, "ColorSequenceIndex", proj.color_sequence_index);
+
+    xml_node* _acpf_player_and_group_tracks_node = xml_create_node(_xml_doc, _liveset_node, "AutoColorPickerForPlayerAndGroupTracks");
+    xml_create_node_and_value(_xml_doc, _acpf_player_and_group_tracks_node, "NextColorIndex", proj.auto_color_picker_for_player_and_group_tracks);
+
+    xml_node* _acpf_return_and_master_tracks_node = xml_create_node(_xml_doc, _liveset_node, "AutoColorPickerForReturnAndMasterTracks");
+    xml_create_node_and_value(_xml_doc, _acpf_return_and_master_tracks_node, "NextColorIndex", proj.auto_color_picker_for_return_and_master_tracks);
+
+    xml_create_node_and_value(_xml_doc, _liveset_node, "ViewData", proj.view_data);
+    xml_create_node_and_value(_xml_doc, _liveset_node, "UseWarperLegacyHiQMode", proj.use_warper_legacy_hiq_mode);
+
+    xml_node* _video_window_rect_node = xml_create_node(_xml_doc, _liveset_node, "VideoWindowRect");
+    xml_create_value(_xml_doc, _video_window_rect_node, "Top", proj.video_window_rect_top);
+    xml_create_value(_xml_doc, _video_window_rect_node, "Left", proj.video_window_rect_left);
+    xml_create_value(_xml_doc, _video_window_rect_node, "Bottom", proj.video_window_rect_bottom);
+    xml_create_value(_xml_doc, _video_window_rect_node, "Right", proj.video_window_rect_right);
+
+    xml_create_node_and_value(_xml_doc, _liveset_node, "ShowVideoWindow", proj.show_video_window);
+    xml_create_node_and_value(_xml_doc, _liveset_node, "TrackHeaderWidth", proj.track_header_width);
+    xml_create_node_and_value(_xml_doc, _liveset_node, "ViewStateArrangerHasDetail", proj.view_state_arranger_has_detail);
+    xml_create_node_and_value(_xml_doc, _liveset_node, "ViewStateSessionHasDetail", proj.view_state_session_has_detail);
+    xml_create_node_and_value(_xml_doc, _liveset_node, "ViewStateDetailIsSample", proj.view_state_detail_is_sample);
+
+    xml_node* _view_states_node = xml_create_node(_xml_doc, _liveset_node, "ViewStates");
+    xml_create_node_and_value(_xml_doc, _view_states_node, "SessionIO", proj.view_states_session_io);
+    xml_create_node_and_value(_xml_doc, _view_states_node, "SessionSends", proj.view_states_session_sends);
+    xml_create_node_and_value(_xml_doc, _view_states_node, "SessionReturns", proj.view_states_session_returns);
+    xml_create_node_and_value(_xml_doc, _view_states_node, "SessionMixer", proj.view_states_session_mixer);
+    xml_create_node_and_value(_xml_doc, _view_states_node, "SessionTrackDelay", proj.view_states_session_track_delay);
+    xml_create_node_and_value(_xml_doc, _view_states_node, "SessionCrossFade", proj.view_states_session_cross_fade);
+    xml_create_node_and_value(_xml_doc, _view_states_node, "SessionShowOverView", proj.view_states_session_show_over_view);
+    xml_create_node_and_value(_xml_doc, _view_states_node, "ArrangerIO", proj.view_states_arranger_io);
+    xml_create_node_and_value(_xml_doc, _view_states_node, "ArrangerReturns", proj.view_states_arranger_returns);
+    xml_create_node_and_value(_xml_doc, _view_states_node, "ArrangerMixer", proj.view_states_arranger_mixer);
+    xml_create_node_and_value(_xml_doc, _view_states_node, "ArrangerTrackDelay", proj.view_states_arranger_track_delay);
+    xml_create_node_and_value(_xml_doc, _view_states_node, "ArrangerShowOverView", proj.view_states_arranger_show_over_view);
 
     // compress
     std::string _xml_data;
