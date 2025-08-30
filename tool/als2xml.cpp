@@ -47,8 +47,8 @@ int main(int argc, char* argv[])
         std::cerr << "Error: Could not write to file: " << _output_path << '\n';
         return 4;
     }
-    // _output_stream << remove_double_newlines(_xml_data);
-    _output_stream << (_xml_data);
+    _output_stream << remove_double_newlines(_xml_data);
+    // _output_stream << (_xml_data);
     _output_stream.close();
     std::cout << "XML written to: " << _output_path << '\n';
     return 0;
