@@ -227,6 +227,32 @@ void import_track_base(xml_node* node, T& track, const fmtals::version ver)
 }
 
 template <typename T>
+void import_device_chain_base(xml_node* node, T& track, const fmtals::version ver)
+{
+    xml_node* _automation_lanes_node = xml_get_node(node, "AutomationLanes");
+    xml_node* _automation_lanes_child_node = xml_get_node(_automation_lanes_node, "AutomationLanes");
+    for (xml_node* _automation_lane_node : xml_get_nodes(_automation_lanes_child_node)) {
+        fmtals::project::automation_lane& _automation_lane = track.automation_lanes.emplace_back();
+        xml_get_node_and_value(_automation_lane_node, "SelectedDevice", _automation_lane.selected_device);
+        xml_get_node_and_value(_automation_lane_node, "SelectedEnvelope", _automation_lane.selected_envelope);
+        xml_get_node_and_value(_automation_lane_node, "IsContentSelected", _automation_lane.is_content_selected);
+        xml_get_node_and_value(_automation_lane_node, "LaneHeight", _automation_lane.lane_height);
+        xml_get_node_and_value(_automation_lane_node, "FadeViewVisible", _automation_lane.fade_view_visible);
+    }
+    xml_get_node_and_value(_automation_lanes_node, "PermanentLanesAreVisible", track.permanent_lanes_are_visible);
+
+    xml_node* _envelope_chooser_node = xml_get_node(node, "EnvelopeChooser");
+    xml_get_node_and_value(_envelope_chooser_node, "SelectedDevice", track.envelope_chooser_selected_device);
+    xml_get_node_and_value(_envelope_chooser_node, "SelectedEnvelope", track.envelope_chooser_selected_envelope);
+
+    // AudioInputRouting TODO
+    // MidiInputRouting TODO
+    // AudioOutputRouting TODO
+    // MidiOutputRouting TODO
+    // Mixer TODO
+}
+
+template <typename T>
 void export_track_base(xml_document& document, xml_node* node, const T& track, const fmtals::version ver)
 {
     xml_create_node_and_value(document, node, "LomId", track.lom_id);
@@ -305,10 +331,8 @@ void import_project(std::istream& stream, project& proj, version& ver)
 
         std::visit([&](auto& _track_visit) {
             using _track_type_t = std::decay_t<decltype(_track_visit)>;
-
             xml_get_value(_track_node, "Id", _track_visit.id);
             import_track_base(_track_node, _track_visit, ver);
-
             xml_get_node_and_value(_track_node, "SavedPlayingSlot", _track_visit.saved_playing_slot);
             xml_get_node_and_value(_track_node, "SavedPlayingOffset", _track_visit.saved_playing_offset);
             xml_get_node_and_value(_track_node, "MidiFoldIn", _track_visit.midi_fold_in);
@@ -320,33 +344,13 @@ void import_project(std::istream& stream, project& proj, version& ver)
             xml_get_node_and_value(_track_node, "MidiTargetPrefersFoldOrIsNotUniform", _track_visit.midi_target_prefers_fold_or_is_not_uniform);
 
             xml_node* _device_chain_node = xml_get_node(_track_node, "DeviceChain");
-            xml_node* _automation_lanes_node = xml_get_node(_device_chain_node, "AutomationLanes");
-            xml_node* _automation_lanes_child_node = xml_get_node(_automation_lanes_node, "AutomationLanes");
-            for (xml_node* _automation_lane_node : xml_get_nodes(_automation_lanes_child_node)) {
-                project::automation_lane& _automation_lane = _track_visit.automation_lanes.emplace_back();
-                xml_get_node_and_value(_automation_lane_node, "SelectedDevice", _automation_lane.selected_device);
-                xml_get_node_and_value(_automation_lane_node, "SelectedEnvelope", _automation_lane.selected_envelope);
-                xml_get_node_and_value(_automation_lane_node, "IsContentSelected", _automation_lane.is_content_selected);
-                xml_get_node_and_value(_automation_lane_node, "LaneHeight", _automation_lane.lane_height);
-                xml_get_node_and_value(_automation_lane_node, "FadeViewVisible", _automation_lane.fade_view_visible);
-            }
-            xml_get_node_and_value(_automation_lanes_node, "PermanentLanesAreVisible", _track_visit.permanent_lanes_are_visible);
-
-            xml_node* _envelope_chooser_node = xml_get_node(_device_chain_node, "EnvelopeChooser");
-            xml_get_node_and_value(_envelope_chooser_node, "SelectedDevice", _track_visit.envelope_chooser_selected_device);
-            xml_get_node_and_value(_envelope_chooser_node, "SelectedEnvelope", _track_visit.envelope_chooser_selected_envelope);
-
-            // AudioInputRouting TODO
-            // MidiInputRouting TODO
-            // AudioOutputRouting TODO
-            // MidiOutputRouting TODO
-            // Mixer TODO
+            import_device_chain_base(_device_chain_node, _track_visit, ver);
+            // mixer TODO
 
             xml_node* _main_sequencer_node = xml_get_node(_device_chain_node, "MainSequencer");
             xml_node* _sample_node = xml_get_node(_main_sequencer_node, "Sample");
             xml_node* _arranger_automation_node = xml_get_node(_sample_node, "ArrangerAutomation");
 
-            // events
             for (xml_node* _event_node : xml_get_nodes(xml_get_node(_arranger_automation_node, "Events"))) {
 
                 // audio events
@@ -438,11 +442,19 @@ void import_project(std::istream& stream, project& proj, version& ver)
         _master_track_node = xml_get_node(_liveset_node, "MasterTrack");
     }
     import_track_base(_master_track_node, proj.project_master_track, ver);
-    // TODO device chain
-    
-    xml_node* _pre_hear_track = xml_get_node(_liveset_node, "PreHearTrack");
-    import_track_base(_pre_hear_track, proj.project_prehear_track, ver);
-    // TODO device chain
+
+    xml_node* _master_device_chain_node = xml_get_node(_master_track_node, "DeviceChain");
+    import_device_chain_base(_master_device_chain_node, proj.project_master_track, ver);
+
+    // todo Mixer etc
+
+    xml_node* _pre_hear_track_node = xml_get_node(_liveset_node, "PreHearTrack");
+    import_track_base(_pre_hear_track_node, proj.project_prehear_track, ver);
+
+    xml_node* _pre_hear_device_chain_node = xml_get_node(_pre_hear_track_node, "DeviceChain");
+    import_device_chain_base(_pre_hear_device_chain_node, proj.project_prehear_track, ver);
+
+    // todo Mixer etc
 
     for (xml_node* _sends_pre_node : xml_get_nodes(xml_get_node(_liveset_node, "SendsPre"))) {
         // TODO
