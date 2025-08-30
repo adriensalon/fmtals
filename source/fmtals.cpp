@@ -351,7 +351,7 @@ void import_project(std::istream& stream, project& proj, version& ver)
             xml_node* _sample_node = xml_get_node(_main_sequencer_node, "Sample");
             // xml_node* _arranger_automation_node = xml_get_node(_sample_node, "ArrangerAutomation");
 
-            for (xml_node* _event_node : xml_get_nodes(xml_get_node(_arranger_automation_node, "Events"))) {
+            // for (xml_node* _event_node : xml_get_nodes(xml_get_node(_arranger_automation_node, "Events"))) {
 
             //     // audio events
             //     if constexpr (std::is_same_v<_track_type_t, project::audio_track>) {
@@ -487,8 +487,8 @@ void import_project(std::istream& stream, project& proj, version& ver)
 
     xml_node* _song_master_values_node = xml_get_node(_liveset_node, "SongMasterValues");
     xml_node* _session_scroller_pos_node = xml_get_node(_song_master_values_node, "SessionScrollerPos");
-    xml_get_value(_session_scroller_pos_node, "X", proj.song_master_values_scroll_pos_x);
-    xml_get_value(_session_scroller_pos_node, "Y", proj.song_master_values_scroll_pos_y);
+    xml_get_value(_session_scroller_pos_node, "X", proj.song_master_values_scroller_pos_x);
+    xml_get_value(_session_scroller_pos_node, "Y", proj.song_master_values_scroller_pos_y);
 
     xml_get_node_and_value(_liveset_node, "GlobalQuantisation", proj.global_quantisation);
     xml_get_node_and_value(_liveset_node, "AutoQuantisation", proj.auto_quantisation);
@@ -793,8 +793,8 @@ void export_project(std::ostream& stream, const project& proj, const version& ve
 
     xml_node* _song_master_values_node = xml_create_node(_xml_doc, _liveset_node, "SongMasterValues");
     xml_node* _session_scroller_pos_node = xml_create_node(_xml_doc, _song_master_values_node, "SessionScrollerPos");
-    xml_create_value(_xml_doc, _session_scroller_pos_node, "X", proj.song_master_values_scroll_pos_x);
-    xml_create_value(_xml_doc, _session_scroller_pos_node, "Y", proj.song_master_values_scroll_pos_y);
+    xml_create_value(_xml_doc, _session_scroller_pos_node, "X", proj.song_master_values_scroller_pos_x);
+    xml_create_value(_xml_doc, _session_scroller_pos_node, "Y", proj.song_master_values_scroller_pos_y);
 
     xml_create_node_and_value(_xml_doc, _liveset_node, "GlobalQuantisation", proj.global_quantisation);
     xml_create_node_and_value(_xml_doc, _liveset_node, "AutoQuantisation", proj.auto_quantisation);

@@ -460,8 +460,8 @@ struct project {
     std::optional<unsigned int> transport_metronome_tick_duration;      // Version > 9.0.0
     bool transport_draw_mode;
     std::optional<bool> transport_computer_keyboard_is_enabled;         // Version < 12.0.0
-    float song_master_values_scroll_pos_x;
-    float song_master_values_scroll_pos_y;
+    unsigned int song_master_values_scroller_pos_x;
+    unsigned int song_master_values_scroller_pos_y;
     unsigned int global_quantisation;
     unsigned int auto_quantisation;
     unsigned int grid_fixed_numerator;
@@ -477,10 +477,10 @@ struct project {
     float time_selection_anchor_time;
     float time_selection_other_time;
     float sequencer_navigator_current_zoom;
-    float sequencer_navigator_scroller_pos_x;
-    float sequencer_navigator_scroller_pos_y;
-    float sequencer_navigator_client_size_x;
-    float sequencer_navigator_client_size_y;
+    unsigned int sequencer_navigator_scroller_pos_x;
+    unsigned int sequencer_navigator_scroller_pos_y;
+    unsigned int sequencer_navigator_client_size_x;
+    unsigned int sequencer_navigator_client_size_y;
     std::optional<bool> is_content_splitter_open;                       // Version >= 12.0.0
     std::optional<bool> is_expression_splitter_open;                    // Version >= 12.0.0
     std::optional<bool> view_state_launch_panel;                        // Version < 12.0.0
@@ -511,10 +511,10 @@ struct project {
     unsigned int auto_color_picker_for_return_and_master_tracks;
     std::string view_data;
     bool use_warper_legacy_hiq_mode;
-    float video_window_rect_top;
-    float video_window_rect_bottom;
-    float video_window_rect_left;
-    float video_window_rect_right;
+    unsigned int video_window_rect_top;
+    unsigned int video_window_rect_bottom;
+    unsigned int video_window_rect_left;
+    unsigned int video_window_rect_right;
     bool show_video_window;
     unsigned int track_header_width;
     bool view_state_arranger_has_detail;
