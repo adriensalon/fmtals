@@ -349,84 +349,84 @@ void import_project(std::istream& stream, project& proj, version& ver)
 
             xml_node* _main_sequencer_node = xml_get_node(_device_chain_node, "MainSequencer");
             xml_node* _sample_node = xml_get_node(_main_sequencer_node, "Sample");
-            xml_node* _arranger_automation_node = xml_get_node(_sample_node, "ArrangerAutomation");
+            // xml_node* _arranger_automation_node = xml_get_node(_sample_node, "ArrangerAutomation");
 
             for (xml_node* _event_node : xml_get_nodes(xml_get_node(_arranger_automation_node, "Events"))) {
 
-                // audio events
-                if constexpr (std::is_same_v<_track_type_t, project::audio_track>) {
-                    if (std::string(_event_node->name()) == "AudioClip") {
-                        project::audio_clip _audio_clip = _track_visit.events_audio_clips.emplace_back();
-                        xml_get_value(_event_node, "Time", _audio_clip.time);
-                        xml_get_node_and_value(_event_node, "LomId", _audio_clip.lom_id);
-                        xml_get_node_and_value(_event_node, "LomIdView", _audio_clip.lom_id_view);
+            //     // audio events
+            //     if constexpr (std::is_same_v<_track_type_t, project::audio_track>) {
+            //         if (std::string(_event_node->name()) == "AudioClip") {
+            //             project::audio_clip _audio_clip = _track_visit.events_audio_clips.emplace_back();
+            //             xml_get_value(_event_node, "Time", _audio_clip.time);
+            //             xml_get_node_and_value(_event_node, "LomId", _audio_clip.lom_id);
+            //             xml_get_node_and_value(_event_node, "LomIdView", _audio_clip.lom_id_view);
 
-                        for (xml_node* _warp_marker_node : xml_get_nodes(xml_get_node(_event_node, "WarpMarkers"))) {
-                            project::warp_marker& _warp_marker = _audio_clip.warp_markers.emplace_back();
-                            xml_get_value(_warp_marker_node, "SecTime", _warp_marker.sec_time);
-                            xml_get_value(_warp_marker_node, "BeatTime", _warp_marker.beat_time);
-                        }
+            //             for (xml_node* _warp_marker_node : xml_get_nodes(xml_get_node(_event_node, "WarpMarkers"))) {
+            //                 project::warp_marker& _warp_marker = _audio_clip.warp_markers.emplace_back();
+            //                 xml_get_value(_warp_marker_node, "SecTime", _warp_marker.sec_time);
+            //                 xml_get_value(_warp_marker_node, "BeatTime", _warp_marker.beat_time);
+            //             }
 
-                        xml_get_node_and_value(_event_node, "MarkersGenerated", _audio_clip.markers_generated);
-                        xml_get_node_and_value(_event_node, "CurrentStart", _audio_clip.current_start);
-                        xml_get_node_and_value(_event_node, "CurrentEnd", _audio_clip.current_end);
+            //             xml_get_node_and_value(_event_node, "MarkersGenerated", _audio_clip.markers_generated);
+            //             xml_get_node_and_value(_event_node, "CurrentStart", _audio_clip.current_start);
+            //             xml_get_node_and_value(_event_node, "CurrentEnd", _audio_clip.current_end);
 
-                        xml_node* _loop_node = xml_get_node(_event_node, "Loop");
-                        xml_get_node_and_value(_loop_node, "LoopStart", _audio_clip.loop_start);
-                        xml_get_node_and_value(_loop_node, "LoopEnd", _audio_clip.loop_end);
-                        xml_get_node_and_value(_loop_node, "StartRelative", _audio_clip.loop_start_relative);
-                        xml_get_node_and_value(_loop_node, "LoopOn", _audio_clip.loop_on);
-                        xml_get_node_and_value(_loop_node, "OutMarker", _audio_clip.loop_out_marker);
-                        xml_get_node_and_value(_loop_node, "HiddenLoopStart", _audio_clip.hidden_loop_start);
-                        xml_get_node_and_value(_loop_node, "HiddenLoopEnd", _audio_clip.hidden_loop_end);
+            //             xml_node* _loop_node = xml_get_node(_event_node, "Loop");
+            //             xml_get_node_and_value(_loop_node, "LoopStart", _audio_clip.loop_start);
+            //             xml_get_node_and_value(_loop_node, "LoopEnd", _audio_clip.loop_end);
+            //             xml_get_node_and_value(_loop_node, "StartRelative", _audio_clip.loop_start_relative);
+            //             xml_get_node_and_value(_loop_node, "LoopOn", _audio_clip.loop_on);
+            //             xml_get_node_and_value(_loop_node, "OutMarker", _audio_clip.loop_out_marker);
+            //             xml_get_node_and_value(_loop_node, "HiddenLoopStart", _audio_clip.hidden_loop_start);
+            //             xml_get_node_and_value(_loop_node, "HiddenLoopEnd", _audio_clip.hidden_loop_end);
 
-                        xml_get_node_and_value(_event_node, "Name", _audio_clip.name);
-                        xml_get_node_and_value(_event_node, "Annotation", _audio_clip.annotation);
-                        if (ver >= version::v_12_0_0) {
-                            xml_get_node_and_value(_event_node, "Color", _audio_clip.color.emplace());
-                        } else {
-                            xml_get_node_and_value(_event_node, "ColorIndex", _audio_clip.color_index.emplace());
-                        }
-                        xml_get_node_and_value(_event_node, "LaunchMode", _audio_clip.launch_mode);
-                        xml_get_node_and_value(_event_node, "LaunchQuantisation", _audio_clip.launch_quantisation);
+            //             xml_get_node_and_value(_event_node, "Name", _audio_clip.name);
+            //             xml_get_node_and_value(_event_node, "Annotation", _audio_clip.annotation);
+            //             if (ver >= version::v_12_0_0) {
+            //                 xml_get_node_and_value(_event_node, "Color", _audio_clip.color.emplace());
+            //             } else {
+            //                 xml_get_node_and_value(_event_node, "ColorIndex", _audio_clip.color_index.emplace());
+            //             }
+            //             xml_get_node_and_value(_event_node, "LaunchMode", _audio_clip.launch_mode);
+            //             xml_get_node_and_value(_event_node, "LaunchQuantisation", _audio_clip.launch_quantisation);
 
-                        // TODO time signature
+            //             // TODO time signature
 
-                        // TODO envelopes
+            //             // TODO envelopes
 
-                        // TODO ScrollerTimePreserver
+            //             // TODO ScrollerTimePreserver
 
-                        // TODO TimeSelection
+            //             // TODO TimeSelection
 
-                        xml_get_node_and_value(_event_node, "Legato", _audio_clip.legato);
-                        xml_get_node_and_value(_event_node, "Ram", _audio_clip.ram);
-                        // groove settings ?
-                        xml_get_node_and_value(_event_node, "Disabled", _audio_clip.disabled);
-                        xml_get_node_and_value(_event_node, "VelocityAmount", _audio_clip.velocity_amount);
-                        xml_get_node_and_value(_event_node, "FollowTime", _audio_clip.follow_time);
-                        xml_get_node_and_value(_event_node, "FollowActionA", _audio_clip.follow_action_a);
-                        xml_get_node_and_value(_event_node, "FollowActionB", _audio_clip.follow_action_b);
-                        xml_get_node_and_value(_event_node, "FollowChanceA", _audio_clip.follow_chance_a);
-                        xml_get_node_and_value(_event_node, "FollowChanceB", _audio_clip.follow_chance_b);
+            //             xml_get_node_and_value(_event_node, "Legato", _audio_clip.legato);
+            //             xml_get_node_and_value(_event_node, "Ram", _audio_clip.ram);
+            //             // groove settings ?
+            //             xml_get_node_and_value(_event_node, "Disabled", _audio_clip.disabled);
+            //             xml_get_node_and_value(_event_node, "VelocityAmount", _audio_clip.velocity_amount);
+            //             xml_get_node_and_value(_event_node, "FollowTime", _audio_clip.follow_time);
+            //             xml_get_node_and_value(_event_node, "FollowActionA", _audio_clip.follow_action_a);
+            //             xml_get_node_and_value(_event_node, "FollowActionB", _audio_clip.follow_action_b);
+            //             xml_get_node_and_value(_event_node, "FollowChanceA", _audio_clip.follow_chance_a);
+            //             xml_get_node_and_value(_event_node, "FollowChanceB", _audio_clip.follow_chance_b);
 
-                        // grid
-                        xml_node* _grid_node = xml_get_node(_event_node, "Grid");
-                        xml_get_node_and_value(_grid_node, "FixedNumerator", _audio_clip.grid_fixed_numerator);
-                        xml_get_node_and_value(_grid_node, "FixedDenominator", _audio_clip.grid_fixed_denominator);
-                        xml_get_node_and_value(_grid_node, "GridIntervalPixel", _audio_clip.grid_interval_pixel);
-                        xml_get_node_and_value(_grid_node, "Ntoles", _audio_clip.grid_ntoles);
-                        xml_get_node_and_value(_grid_node, "SnapToGrid", _audio_clip.grid_snap_to_grid);
-                        xml_get_node_and_value(_grid_node, "Fixed", _audio_clip.grid_fixed);
+            //             // grid
+            //             xml_node* _grid_node = xml_get_node(_event_node, "Grid");
+            //             xml_get_node_and_value(_grid_node, "FixedNumerator", _audio_clip.grid_fixed_numerator);
+            //             xml_get_node_and_value(_grid_node, "FixedDenominator", _audio_clip.grid_fixed_denominator);
+            //             xml_get_node_and_value(_grid_node, "GridIntervalPixel", _audio_clip.grid_interval_pixel);
+            //             xml_get_node_and_value(_grid_node, "Ntoles", _audio_clip.grid_ntoles);
+            //             xml_get_node_and_value(_grid_node, "SnapToGrid", _audio_clip.grid_snap_to_grid);
+            //             xml_get_node_and_value(_grid_node, "Fixed", _audio_clip.grid_fixed);
 
-                        xml_get_node_and_value(_event_node, "FreezeStart", _audio_clip.freeze_start);
-                        xml_get_node_and_value(_event_node, "FreezeEnd", _audio_clip.freeze_end);
-                        xml_get_node_and_value(_event_node, "IsSongTempoMaster", _audio_clip.is_song_tempo_master);
-                        xml_get_node_and_value(_event_node, "IsWarped", _audio_clip.is_warped);
+            //             xml_get_node_and_value(_event_node, "FreezeStart", _audio_clip.freeze_start);
+            //             xml_get_node_and_value(_event_node, "FreezeEnd", _audio_clip.freeze_end);
+            //             xml_get_node_and_value(_event_node, "IsSongTempoMaster", _audio_clip.is_song_tempo_master);
+            //             xml_get_node_and_value(_event_node, "IsWarped", _audio_clip.is_warped);
 
-                        // TODO many ahah
-                    }
-                }
-            }
+            //             // TODO many ahah
+            //         }
+            //     }
+            // }
 
             // Inner DeviceChain TODO
         },
