@@ -4,8 +4,6 @@
 #include <fstream>
 #include <sstream>
 
-#include <cereal/archives/xml.hpp>
-
 extern void gz_decompress(std::istream& gz_stream, std::string& data);
 
 std::string remove_double_newlines(const std::string& input)
@@ -37,7 +35,6 @@ int main(int argc, char* argv[])
         return 3;
     }
     std::ifstream _input_stream(_input_path, std::ios::binary);
-    cereal::rapidxml::xml_document<char> _xml_doc;
     std::string _xml_data;
     gz_decompress(_input_stream, _xml_data);
     std::filesystem::path _output_path = _input_path;

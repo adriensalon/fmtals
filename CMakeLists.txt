@@ -3,6 +3,10 @@ project(fmtals)
 
 option(FMTALS_BUILD_TOOL "Build tool executables" ON)
 
+if(!CEREAL_INCLUDE_DIR)
+    message(FATAL_ERROR "Please provide the directory to cereal include dir by setting CEREAL_INCLUDE_DIR")
+endif()
+
 # fmtals library
 add_subdirectory(external/zlib)
 file(GLOB_RECURSE fmtals_source "source/*.cpp")
