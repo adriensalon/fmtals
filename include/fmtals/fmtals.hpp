@@ -100,7 +100,7 @@ struct project {
         unsigned int lom_id;
         unsigned int lom_id_view;
         bool envelope_mode_preferred;
-        float track_delay_value;
+        unsigned int track_delay_value;
         bool track_delay_is_value_sample_based;
         std::string effective_name;
         std::string user_name;
@@ -165,7 +165,7 @@ struct project {
         unsigned int lom_id;
         unsigned int lom_id_view;
         bool envelope_mode_preferred;
-        float track_delay_value;
+        unsigned int track_delay_value;
         bool track_delay_is_value_sample_based;
         std::string effective_name;
         std::string user_name;
@@ -220,7 +220,7 @@ struct project {
         unsigned int lom_id;
         unsigned int lom_id_view;
         bool envelope_mode_preferred;
-        float track_delay_value;
+        unsigned int track_delay_value;
         bool track_delay_is_value_sample_based;
         std::string effective_name;
         std::string user_name;
@@ -275,7 +275,7 @@ struct project {
         unsigned int lom_id;
         unsigned int lom_id_view;
         bool envelope_mode_preferred;
-        float track_delay_value;
+        unsigned int track_delay_value;
         bool track_delay_is_value_sample_based;
         std::string effective_name;
         std::string user_name;
@@ -330,7 +330,7 @@ struct project {
         unsigned int lom_id;
         unsigned int lom_id_view;
         bool envelope_mode_preferred;
-        float track_delay_value;
+        unsigned int track_delay_value;
         bool track_delay_is_value_sample_based;
         std::string effective_name;
         std::string user_name;
@@ -372,7 +372,7 @@ struct project {
         unsigned int lom_id;
         unsigned int lom_id_view;
         bool envelope_mode_preferred;
-        float track_delay_value;
+        unsigned int track_delay_value;
         bool track_delay_is_value_sample_based;
         std::string effective_name;
         std::string user_name;
@@ -474,9 +474,9 @@ struct project {
     std::string scale_information_name;
     std::optional<bool> in_key;                                         // Version >= 12.0.0
     unsigned int smpte_format;
-    float time_selection_anchor_time;
-    float time_selection_other_time;
-    float sequencer_navigator_current_zoom;
+    unsigned int time_selection_anchor_time;
+    unsigned int time_selection_other_time;
+    double sequencer_navigator_current_zoom;
     unsigned int sequencer_navigator_scroller_pos_x;
     unsigned int sequencer_navigator_scroller_pos_y;
     unsigned int sequencer_navigator_client_size_x;
@@ -503,7 +503,7 @@ struct project {
     bool solo_in_place;
     unsigned int crossfade_curve;
     unsigned int latency_compensation;
-    unsigned int highlighted_track_index;
+    int highlighted_track_index;
     std::vector<groove> groove_pool;
     bool arrangement_overdub;
     unsigned int color_sequence_index;
@@ -511,10 +511,10 @@ struct project {
     unsigned int auto_color_picker_for_return_and_master_tracks;
     std::string view_data;
     bool use_warper_legacy_hiq_mode;
-    unsigned int video_window_rect_top;
-    unsigned int video_window_rect_bottom;
-    unsigned int video_window_rect_left;
-    unsigned int video_window_rect_right;
+    int video_window_rect_top;
+    int video_window_rect_bottom;
+    int video_window_rect_left;
+    int video_window_rect_right;
     bool show_video_window;
     unsigned int track_header_width;
     bool view_state_arranger_has_detail;
