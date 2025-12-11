@@ -24,14 +24,6 @@ enum struct version : std::uint32_t {
 /// VST2&3 plugins are supported
 struct project {
 
-    struct automation_lane {
-        std::uint32_t selected_device;
-        std::uint32_t selected_envelope;
-        bool is_content_selected;
-        std::uint32_t lane_height;
-        bool fade_view_visible;
-    };
-
     struct warp_marker {
         float sec_time;
         float beat_time;
@@ -89,39 +81,15 @@ struct project {
     struct midi_clip {
     };
 
-    struct audio_track {
-        std::uint32_t id;
+    struct automation_lane {
+        std::uint32_t selected_device;
+        std::uint32_t selected_envelope;
+        bool is_content_selected;
+        std::uint32_t lane_height;
+        bool fade_view_visible;
+    };
 
-        // base
-        std::uint32_t lom_id;
-        std::uint32_t lom_id_view;
-        bool envelope_mode_preferred;
-        std::uint32_t track_delay_value;
-        bool track_delay_is_value_sample_based;
-        std::string effective_name;
-        std::string user_name;
-        std::string annotation;
-        std::optional<std::string> memorized_first_clip_name; // Not in 9.7.7
-        std::optional<std::uint32_t> color;
-        std::optional<std::uint32_t> color_index;
-        std::int32_t track_group_id;
-        bool track_unfolded;
-        std::uint32_t devices_list_wrapper_lom_id;
-        std::uint32_t clip_slots_list_wrapper_lom_id;
-        std::string view_data;
-
-        // user track
-        std::int32_t saved_playing_slot;
-        std::int32_t saved_playing_offset;
-        bool midi_fold_in;
-        bool midi_prelisten;
-        bool freeze;
-        std::uint32_t velocity_detail;
-        bool need_arranger_refreeze;
-        std::uint32_t post_process_freeze_clips;
-        bool midi_target_prefers_fold_or_is_not_uniform;
-
-        // device chain
+    struct device_chain {
         std::vector<automation_lane> automation_lanes;
         bool permanent_lanes_are_visible;
         std::uint32_t envelope_chooser_selected_device;
@@ -141,6 +109,42 @@ struct project {
         std::uint32_t mixer_lom_id;
         std::uint32_t mixer_lom_id_view;
         bool is_expanded;
+    };
+
+    struct base_track : device_chain {
+        std::uint32_t id;
+        std::uint32_t lom_id;
+        std::uint32_t lom_id_view;
+        bool envelope_mode_preferred;
+        std::uint32_t track_delay_value;
+        bool track_delay_is_value_sample_based;
+        std::string effective_name;
+        std::string user_name;
+        std::string annotation;
+        std::optional<std::string> memorized_first_clip_name; // Not in 9.7.7
+        std::optional<std::uint32_t> color;
+        std::optional<std::uint32_t> color_index;
+        std::int32_t track_group_id;
+        bool track_unfolded;
+        std::uint32_t devices_list_wrapper_lom_id;
+        std::uint32_t clip_slots_list_wrapper_lom_id;
+        std::string view_data;
+    };
+
+    struct editable_track : base_track {
+        std::int32_t saved_playing_slot;
+        std::int32_t saved_playing_offset;
+        bool midi_fold_in;
+        bool midi_prelisten;
+        bool freeze;
+        std::uint32_t velocity_detail;
+        bool need_arranger_refreeze;
+        std::uint32_t post_process_freeze_clips;
+        bool midi_target_prefers_fold_or_is_not_uniform;
+    };
+
+    struct audio_track : editable_track {
+
         // on... /mixer
 
         // main sequencer
@@ -152,250 +156,19 @@ struct project {
         // device chain
     };
 
-    struct midi_track {
-        std::uint32_t id;
-
-        // base
-        std::uint32_t lom_id;
-        std::uint32_t lom_id_view;
-        bool envelope_mode_preferred;
-        std::uint32_t track_delay_value;
-        bool track_delay_is_value_sample_based;
-        std::string effective_name;
-        std::string user_name;
-        std::string annotation;
-        std::optional<std::string> memorized_first_clip_name; // Not in 9.7.7
-        std::optional<std::uint32_t> color;
-        std::optional<std::uint32_t> color_index;
-        std::int32_t track_group_id;
-        bool track_unfolded;
-        std::uint32_t devices_list_wrapper_lom_id;
-        std::uint32_t clip_slots_list_wrapper_lom_id;
-        std::string view_data;
-
-        // user track
-        std::int32_t saved_playing_slot;
-        std::int32_t saved_playing_offset;
-        bool midi_fold_in;
-        bool midi_prelisten;
-        bool freeze;
-        std::uint32_t velocity_detail;
-        bool need_arranger_refreeze;
-        std::uint32_t post_process_freeze_clips;
-        bool midi_target_prefers_fold_or_is_not_uniform;
-
-        // device chain
-        std::vector<automation_lane> automation_lanes;
-        bool permanent_lanes_are_visible;
-        std::uint32_t envelope_chooser_selected_device;
-        std::uint32_t envelope_chooser_selected_envelope;
-        std::string audio_input_routing_target;
-        std::string audio_input_routing_upper_display_string;
-        std::string audio_input_routing_lower_display_string;
-        std::string midi_input_routing_target;
-        std::string midi_input_routing_upper_display_string;
-        std::string midi_input_routing_lower_display_string;
-        std::string audio_output_routing_target;
-        std::string audio_output_routing_upper_display_string;
-        std::string audio_output_routing_lower_display_string;
-        std::string midi_output_routing_target;
-        std::string midi_output_routing_upper_display_string;
-        std::string midi_output_routing_lower_display_string;
-        std::uint32_t mixer_lom_id;
-        std::uint32_t mixer_lom_id_view;
-        bool is_expanded;
+    struct midi_track : editable_track {
     };
 
-    struct group_track {
-        std::uint32_t id;
-
-        // base
-        std::uint32_t lom_id;
-        std::uint32_t lom_id_view;
-        bool envelope_mode_preferred;
-        std::uint32_t track_delay_value;
-        bool track_delay_is_value_sample_based;
-        std::string effective_name;
-        std::string user_name;
-        std::string annotation;
-        std::optional<std::string> memorized_first_clip_name; // Not in 9.7.7
-        std::optional<std::uint32_t> color;
-        std::optional<std::uint32_t> color_index;
-        std::int32_t track_group_id;
-        bool track_unfolded;
-        std::uint32_t devices_list_wrapper_lom_id;
-        std::uint32_t clip_slots_list_wrapper_lom_id;
-        std::string view_data;
-
-        // user track
-        std::int32_t saved_playing_slot;
-        std::int32_t saved_playing_offset;
-        bool midi_fold_in;
-        bool midi_prelisten;
-        bool freeze;
-        std::uint32_t velocity_detail;
-        bool need_arranger_refreeze;
-        std::uint32_t post_process_freeze_clips;
-        bool midi_target_prefers_fold_or_is_not_uniform;
-
-        // device chain
-        std::vector<automation_lane> automation_lanes;
-        bool permanent_lanes_are_visible;
-        std::uint32_t envelope_chooser_selected_device;
-        std::uint32_t envelope_chooser_selected_envelope;
-        std::string audio_input_routing_target;
-        std::string audio_input_routing_upper_display_string;
-        std::string audio_input_routing_lower_display_string;
-        std::string midi_input_routing_target;
-        std::string midi_input_routing_upper_display_string;
-        std::string midi_input_routing_lower_display_string;
-        std::string audio_output_routing_target;
-        std::string audio_output_routing_upper_display_string;
-        std::string audio_output_routing_lower_display_string;
-        std::string midi_output_routing_target;
-        std::string midi_output_routing_upper_display_string;
-        std::string midi_output_routing_lower_display_string;
-        std::uint32_t mixer_lom_id;
-        std::uint32_t mixer_lom_id_view;
-        bool is_expanded;
+    struct group_track : editable_track {
     };
 
-    struct return_track {
-        std::uint32_t id;
-
-        // base
-        std::uint32_t lom_id;
-        std::uint32_t lom_id_view;
-        bool envelope_mode_preferred;
-        std::uint32_t track_delay_value;
-        bool track_delay_is_value_sample_based;
-        std::string effective_name;
-        std::string user_name;
-        std::string annotation;
-        std::optional<std::string> memorized_first_clip_name; // Not in 9.7.7
-        std::optional<std::uint32_t> color;
-        std::optional<std::uint32_t> color_index;
-        std::int32_t track_group_id;
-        bool track_unfolded;
-        std::uint32_t devices_list_wrapper_lom_id;
-        std::uint32_t clip_slots_list_wrapper_lom_id;
-        std::string view_data;
-
-        // user track
-        std::int32_t saved_playing_slot;
-        std::int32_t saved_playing_offset;
-        bool midi_fold_in;
-        bool midi_prelisten;
-        bool freeze;
-        std::uint32_t velocity_detail;
-        bool need_arranger_refreeze;
-        std::uint32_t post_process_freeze_clips;
-        bool midi_target_prefers_fold_or_is_not_uniform;
-
-        // device chain
-        std::vector<automation_lane> automation_lanes;
-        bool permanent_lanes_are_visible;
-        std::uint32_t envelope_chooser_selected_device;
-        std::uint32_t envelope_chooser_selected_envelope;
-        std::string audio_input_routing_target;
-        std::string audio_input_routing_upper_display_string;
-        std::string audio_input_routing_lower_display_string;
-        std::string midi_input_routing_target;
-        std::string midi_input_routing_upper_display_string;
-        std::string midi_input_routing_lower_display_string;
-        std::string audio_output_routing_target;
-        std::string audio_output_routing_upper_display_string;
-        std::string audio_output_routing_lower_display_string;
-        std::string midi_output_routing_target;
-        std::string midi_output_routing_upper_display_string;
-        std::string midi_output_routing_lower_display_string;
-        std::uint32_t mixer_lom_id;
-        std::uint32_t mixer_lom_id_view;
-        bool is_expanded;
+    struct return_track : editable_track {
     };
 
-    struct master_track {
-
-        // base
-        std::uint32_t lom_id;
-        std::uint32_t lom_id_view;
-        bool envelope_mode_preferred;
-        std::uint32_t track_delay_value;
-        bool track_delay_is_value_sample_based;
-        std::string effective_name;
-        std::string user_name;
-        std::string annotation;
-        std::optional<std::string> memorized_first_clip_name; // Not in 9.7.7
-        std::optional<std::uint32_t> color;
-        std::optional<std::uint32_t> color_index;
-        std::int32_t track_group_id;
-        bool track_unfolded;
-        std::uint32_t devices_list_wrapper_lom_id;
-        std::uint32_t clip_slots_list_wrapper_lom_id;
-        std::string view_data;
-
-        // device chain
-        std::vector<automation_lane> automation_lanes;
-        bool permanent_lanes_are_visible;
-        std::uint32_t envelope_chooser_selected_device;
-        std::uint32_t envelope_chooser_selected_envelope;
-        std::string audio_input_routing_target;
-        std::string audio_input_routing_upper_display_string;
-        std::string audio_input_routing_lower_display_string;
-        std::string midi_input_routing_target;
-        std::string midi_input_routing_upper_display_string;
-        std::string midi_input_routing_lower_display_string;
-        std::string audio_output_routing_target;
-        std::string audio_output_routing_upper_display_string;
-        std::string audio_output_routing_lower_display_string;
-        std::string midi_output_routing_target;
-        std::string midi_output_routing_upper_display_string;
-        std::string midi_output_routing_lower_display_string;
-        std::uint32_t mixer_lom_id;
-        std::uint32_t mixer_lom_id_view;
-        bool is_expanded;
+    struct master_track : base_track {
     };
 
-    struct pre_hear_track {
-
-        // base
-        std::uint32_t lom_id;
-        std::uint32_t lom_id_view;
-        bool envelope_mode_preferred;
-        std::uint32_t track_delay_value;
-        bool track_delay_is_value_sample_based;
-        std::string effective_name;
-        std::string user_name;
-        std::string annotation;
-        std::optional<std::string> memorized_first_clip_name; // Not in 9.7.7
-        std::optional<std::uint32_t> color;
-        std::optional<std::uint32_t> color_index;
-        std::int32_t track_group_id;
-        bool track_unfolded;
-        std::uint32_t devices_list_wrapper_lom_id;
-        std::uint32_t clip_slots_list_wrapper_lom_id;
-        std::string view_data;
-
-        // device chain
-        std::vector<automation_lane> automation_lanes;
-        bool permanent_lanes_are_visible;
-        std::uint32_t envelope_chooser_selected_device;
-        std::uint32_t envelope_chooser_selected_envelope;
-        std::string audio_input_routing_target;
-        std::string audio_input_routing_upper_display_string;
-        std::string audio_input_routing_lower_display_string;
-        std::string midi_input_routing_target;
-        std::string midi_input_routing_upper_display_string;
-        std::string midi_input_routing_lower_display_string;
-        std::string audio_output_routing_target;
-        std::string audio_output_routing_upper_display_string;
-        std::string audio_output_routing_lower_display_string;
-        std::string midi_output_routing_target;
-        std::string midi_output_routing_upper_display_string;
-        std::string midi_output_routing_lower_display_string;
-        std::uint32_t mixer_lom_id;
-        std::uint32_t mixer_lom_id_view;
-        bool is_expanded;
+    struct pre_hear_track : base_track {
     };
 
     struct scene {
