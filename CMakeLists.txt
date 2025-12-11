@@ -8,6 +8,10 @@ if(!CEREAL_INCLUDE_DIR)
 endif()
 
 # fmtals library
+set(BUILD_DOC OFF)
+set(BUILD_SANDBOX OFF)
+set(SKIP_PERFORMANCE_COMPARISON ON)
+add_subdirectory(external/cereal)
 add_subdirectory(external/zlib)
 file(GLOB_RECURSE fmtals_source "source/*.cpp")
 add_library(fmtals STATIC ${fmtals_source})
@@ -16,6 +20,7 @@ target_include_directories(fmtals PUBLIC include)
 target_include_directories(fmtals PRIVATE ${CEREAL_INCLUDE_DIR})
 target_include_directories(fmtals PRIVATE external/zlib)
 target_link_libraries(fmtals PRIVATE zlib)
+target_link_libraries(fmtals PUBLIC cereal)
 
 # tools
 if(FMTALS_BUILD_TOOL)

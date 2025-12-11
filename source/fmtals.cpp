@@ -15,11 +15,6 @@
 
 void gz_decompress(std::istream& gz_stream, std::string& data)
 {
-    // if (std::ifstream* _fstream = dynamic_cast<std::ifstream*>(&gz_stream)) {
-    //     if (!(_fstream->flags() & std::ios::binary)) {
-    //         throw std::runtime_error("gz_decompress: ifstream must be opened in binary mode");
-    //     }
-    // }
     std::vector<char> _compressed_data((std::istreambuf_iterator<char>(gz_stream)), std::istreambuf_iterator<char>());
     if (_compressed_data.empty()) {
         throw std::runtime_error("Input stream is empty or unreadable");
